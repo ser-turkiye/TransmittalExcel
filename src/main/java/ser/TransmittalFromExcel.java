@@ -150,7 +150,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
             String tdId = tdoc.getID();
             tdoc.commit();
             Thread.sleep(2000);
-            tdoc = srv.getDocument4ID(tdId, ses);
+            if(!tdId.equals("<new>")) {
+                tdoc = srv.getDocument4ID(tdId, ses);
+            }
 
             proi.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     prjt.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
@@ -164,7 +166,10 @@ public class TransmittalFromExcel extends UnifiedAgent {
             String poId = proi.getID();
             Thread.sleep(2000);
             proi.commit();
-            proi = (IProcessInstance) srv.getInformationObjectByID(poId, ses);
+            if(!poId.equals("<new>")) {
+                proi = (IProcessInstance) srv.getInformationObjectByID(poId, ses);
+            }
+
 
 
             document.setDescriptorValue("ccmPrjDocNumber", "Transmittal Excel [" + tmnr + "]");
@@ -203,6 +208,7 @@ public class TransmittalFromExcel extends UnifiedAgent {
             links.addInformationObject(tdoc.getID());
             links.addInformationObject(document.getID());
             proi.commit();
+            tdoc.commit();
 
 
         } catch (Exception e) {

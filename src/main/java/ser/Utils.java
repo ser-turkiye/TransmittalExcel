@@ -252,7 +252,7 @@ public class Utils {
         IDatabase db = ses.getDatabase(ac.getDefaultDatabaseID());
 
         IDocument rtrn = srv.getClassFactory().getDocumentInstance(db.getDatabaseName(), ac.getID(), "0000" , ses);
-        rtrn.commit();
+        //rtrn.commit();
         //srv.copyDocument2(ses, (IDocument) infObj, rtrn, CopyScope.COPY_DESCRIPTORS);
 
         rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
@@ -287,14 +287,16 @@ public class Utils {
         //rtrn.setDefaultRepresentation(rtrn.getRepresentationCount()-1);
         //tdoc.setDefaultRepresentation(0);
 
-        tdoc.commit();
+        //tdoc.commit();
 
+        /*
         if(!_pdfPath.isEmpty()){
             Files.deleteIfExists(Paths.get(_pdfPath));
         }
         if(!_zipPath.isEmpty()){
             Files.deleteIfExists(Paths.get(_zipPath));
         }
+        */
     }
     static IProcessInstance createEngineeringProjectTransmittal(IDocument doc, ProcessHelper helper) throws Exception {
         IProcessInstance rtrn = helper.buildNewProcessInstanceForID(Conf.ClassIDs.EngineeringProjectTransmittal);

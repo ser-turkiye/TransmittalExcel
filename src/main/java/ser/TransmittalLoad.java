@@ -5,6 +5,7 @@ import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
 
 import java.io.*;
@@ -239,9 +240,7 @@ public class TransmittalLoad extends UnifiedAgent {
                 if(linkeds.contains(edoc.getID())){continue;}
                 if(!docIds.contains(edoc.getID())){continue;}
 
-                lcnt++;
-                System.out.println("IDOC [" + lcnt + "] *** " + edoc.getID());
-                String llfx = (lcnt <= 9 ? "0" : "") + lcnt;
+
                 String docNo = edoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
                 docNo = docNo == null ? "" : docNo;
 
@@ -254,9 +253,20 @@ public class TransmittalLoad extends UnifiedAgent {
                 String parentRevNo = edoc.getDescriptorValue(Conf.Descriptors.ParentDocRevision, String.class);
                 parentRevNo = parentRevNo == null ? "" : parentRevNo;
 
+
                 String parentDoc = parentDocNo + (!parentDocNo.isEmpty() && !parentRevNo.isEmpty() ? "/" : "") + parentRevNo;
 
-                String expPath = Utils.exportDocument(edoc, exportPath, docNo + "_" + revNo);
+                String fileName = edoc.getDescriptorValue(Conf.Descriptors.FileName, String.class);
+                fileName = (fileName == null ? "" : fileName);
+                if(fileName.isEmpty()){continue;}
+
+                //String expPath = Utils.exportDocument(edoc, exportPath, docNo + "_" + revNo);
+                String expPath = Utils.exportDocument(edoc, exportPath, FilenameUtils.removeExtension(fileName));
+                if(expFilePaths.contains(expPath)){continue;}
+
+                lcnt++;
+                System.out.println("IDOC [" + lcnt + "] *** " + edoc.getID());
+                String llfx = (lcnt <= 9 ? "0" : "") + lcnt;
 
                 for (String ekey : ebks.keySet()) {
                     String einx = ekey + llfx;
@@ -286,7 +296,7 @@ public class TransmittalLoad extends UnifiedAgent {
                 if(cdoc != null){
                     String crsNo = cdoc.getDescriptorValue(Conf.Descriptors.ObjectNumber, String.class);
                     if(!crsNo.isEmpty()){
-                        String crsPath = Utils.exportDocument(cdoc, exportPath, docNo + "_" + revNo + "_" + crsNo);
+                        String crsPath = Utils.exportDocument(cdoc, exportPath, FilenameUtils.removeExtension(fileName) + "_" + crsNo);
                         expFilePaths.add(crsPath);
                     }
                 }
@@ -357,6 +367,7 @@ public class TransmittalLoad extends UnifiedAgent {
 
 
             Utils.updateTransmittalDocument(tdoc, exportPath, pdfPath, zipPath);
+            tdoc.commit();
 
             if(!isTDocLinked) {
                 links.addInformationObject(tdoc.getID());
