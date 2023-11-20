@@ -65,15 +65,15 @@ public class TransmittalFromExcel extends UnifiedAgent {
 
                 if(distUser.isEmpty() == false){
                     proi.setDescriptorValue(distUser, ldst.getString("user"));
-                    tdoc.setDescriptorValue(distUser, ldst.getString("user"));
+                    //tdoc.setDescriptorValue(distUser, ldst.getString("user"));
                 }
                 if(distPurpose.isEmpty() == false){
                     proi.setDescriptorValue(distPurpose, ldst.getString("purpose"));
-                    tdoc.setDescriptorValue(distPurpose, ldst.getString("purpose"));
+                    //tdoc.setDescriptorValue(distPurpose, ldst.getString("purpose"));
                 }
                 if(distDlvMethod.isEmpty() == false){
                     proi.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
-                    tdoc.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
+                    //tdoc.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
                 }
                 if(distDueDate.isEmpty() == false){
                     //proi.setDescriptorValue(distDueDate, ldst.getString("dueDate"));
@@ -102,7 +102,7 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 if(dval.isEmpty()){continue;}
 
                 proi.setDescriptorValue(pfld, dval);
-                tdoc.setDescriptorValue(pfld, dval);
+                //tdoc.setDescriptorValue(pfld, dval);
 
             }
             String tmnr = proi.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
@@ -113,46 +113,66 @@ public class TransmittalFromExcel extends UnifiedAgent {
 
             String tuss = Utils.getWorkbasketDisplayNames(ses, srv, proi.getDescriptorValue("To-Receiver", String.class));
             proi.setDescriptorValue("To-Receiver", tuss);
-            tdoc.setDescriptorValue("To-Receiver", tuss);
+            //tdoc.setDescriptorValue("To-Receiver", tuss);
 
             String auss = Utils.getWorkbasketDisplayNames(ses, srv, proi.getDescriptorValue("ObjectAuthors", String.class));
             proi.setDescriptorValue("ObjectAuthors", auss);
-            tdoc.setDescriptorValue("ObjectAuthors", auss);
+            //tdoc.setDescriptorValue("ObjectAuthors", auss);
 
             String cuss = Utils.getWorkbasketDisplayNames(ses, srv, proi.getDescriptorValue("CC-Receiver", String.class));
             proi.setDescriptorValue("CC-Receiver", cuss);
-            tdoc.setDescriptorValue("CC-Receiver", cuss);
+            //tdoc.setDescriptorValue("CC-Receiver", cuss);
 
             proi.setDescriptorValue("ObjectNumberExternal", tmnr);
-            tdoc.setDescriptorValue("ObjectNumberExternal", tmnr);
+            //tdoc.setDescriptorValue("ObjectNumberExternal", tmnr);
 
+
+            tdoc.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+                    tmnr);
+            tdoc.setDescriptorValue(Conf.Descriptors.ProjectNo,
+                    prjt.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
+            tdoc.setDescriptorValue(Conf.Descriptors.ProjectName,
+                    prjt.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
+            tdoc.setDescriptorValue(Conf.Descriptors.DccList,
+                    prjt.getDescriptorValue(Conf.Descriptors.DccList, String.class));
+
+            tdoc.setDescriptorValue(Conf.Descriptors.DocNumber, tmnr);
+            tdoc.setDescriptorValue(Conf.Descriptors.DocRevision, "");
+            tdoc.setDescriptorValue(Conf.Descriptors.DocType, "Transmittal-Outgoing");
+            tdoc.setDescriptorValue(Conf.Descriptors.FileName, "" + tmnr + ".pdf");
+            tdoc.setDescriptorValue(Conf.Descriptors.ObjectName, "Transmittal Cover Page");
+            tdoc.setDescriptorValue(Conf.Descriptors.Category, "Transmittal");
+            tdoc.setDescriptorValue(Conf.Descriptors.Originator,
+                    prjt.getDescriptorValue(Conf.Descriptors.Prefix, String.class)
+            );
+
+
+            String tdId = tdoc.getID();
+            tdoc.commit();
+            Thread.sleep(2000);
+            tdoc = srv.getDocument4ID(tdId, ses);
 
             proi.setDescriptorValue(Conf.Descriptors.ProjectNo,
-                    prjt.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
-            tdoc.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     prjt.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
 
             proi.setDescriptorValue(Conf.Descriptors.ProjectName,
                     prjt.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
-            tdoc.setDescriptorValue(Conf.Descriptors.ProjectName,
-                    prjt.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
 
             proi.setDescriptorValue(Conf.Descriptors.DccList,
                     prjt.getDescriptorValue(Conf.Descriptors.DccList, String.class));
-            tdoc.setDescriptorValue(Conf.Descriptors.DccList,
-                    prjt.getDescriptorValue(Conf.Descriptors.DccList, String.class));
 
-            tdoc.setDescriptorValue(Conf.Descriptors.DocNumber,
-                    "Transmittal Cover [" + tmnr + "]");
+            String poId = proi.getID();
+            Thread.sleep(2000);
             proi.commit();
-            tdoc.commit();
+            proi = (IProcessInstance) srv.getInformationObjectByID(poId, ses);
+
 
             document.setDescriptorValue("ccmPrjDocNumber", "Transmittal Excel [" + tmnr + "]");
             document.commit();
 
+            /*
             ITask pitk = proi.getLoadedRootTask();
 
-            /*
             INode tnod = Utils.getNode((IFolder) prjt, Conf.ExcelTransmittalNodes.FromExcelNodeName);
             IElements tels = tnod.getElements();
             if (tels.getItemByLink2(FMLinkType.TASK, pitk.getID()) == null){
@@ -167,9 +187,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
             IInformationObjectLinks links = proi.getLoadedInformationObjectLinks();
 
             List<JSONObject> docs = Utils.getListOfDocuments(fwrb);
-            int lcnt = 0;
+            //int lcnt = 0;
             for (JSONObject ldoc : docs) {
-                lcnt++;
+                //lcnt++;
                 if(ldoc.get("docNo") == null){continue;}
                 if(ldoc.get("revNo") == null){continue;}
 

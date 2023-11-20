@@ -179,7 +179,7 @@ public class Utils {
 
     }
     static IStringMatrix getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
-        IStringMatrix rtrn = srv.getStringMatrix("MailConfig" + (!mtpn.isEmpty() ? "." + mtpn : ""), ses);
+        IStringMatrix rtrn = srv.getStringMatrix("CCM_MAIL_CONFIG", ses);
         if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
         return rtrn;
     }
@@ -256,7 +256,7 @@ public class Utils {
         //srv.copyDocument2(ses, (IDocument) infObj, rtrn, CopyScope.COPY_DESCRIPTORS);
 
         rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
-        rtrn.commit();
+        //rtrn.commit();
 
         return rtrn;
     }

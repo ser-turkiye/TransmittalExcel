@@ -13,7 +13,6 @@ import static java.lang.System.out;
 
 
 public class TransmittalInit extends UnifiedAgent {
-
     ISession ses;
     IDocumentServer srv;
     IBpmService bpm;
@@ -22,6 +21,10 @@ public class TransmittalInit extends UnifiedAgent {
     protected Object execute() {
         if (getEventTask() == null)
             return resultError("Null Document object");
+
+        if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
+            return resultRestart("Restarting Agent");
+        }
 
         ses = getSes();
         srv = ses.getDocumentServer();

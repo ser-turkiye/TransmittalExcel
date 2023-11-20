@@ -5,9 +5,6 @@ import org.json.JSONObject;
 import java.util.List;
 
 public class Conf {
-    public static class ExcelTransmittalLink {
-        public static final String WebBase = "http://localhost/webcube/";
-    }
     public static class ExcelTransmittalNodes {
         public static final String FromExcelNodeName = "Generate Transmittal From Excel";
     }

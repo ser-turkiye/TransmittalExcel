@@ -24,6 +24,10 @@ public class TransmittalLoad extends UnifiedAgent {
         if (getEventTask() == null)
             return resultError("Null Document object");
 
+        if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
+            return resultRestart("Restarting Agent");
+        }
+
         com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
 
         ses = getSes();
@@ -106,17 +110,33 @@ public class TransmittalLoad extends UnifiedAgent {
             IInformationObjectLinks links = proi.getLoadedInformationObjectLinks();
             for (ILink link : links.getLinks()) {
                 IDocument xdoc = (IDocument) link.getTargetInformationObject();
-                if(xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){
-                    String dType = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
-                    dType = (dType == null ? "" : dType);
-                    if(dType == "Transmittal-Outgoing"){
-                        tdoc = (tdoc == null ? xdoc : tdoc);
-                        continue;
+                if(!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
+
+                String dtyp = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
+                dtyp = (dtyp == null ? "" : dtyp);
+
+                if(dtyp.equals("Transmittal-Outgoing")){
+
+                    String docn = xdoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
+                    String docr = xdoc.getDescriptorValue(Conf.Descriptors.DocRevision, String.class);
+                    docn = (docn == null ? "" : docn);
+                    docr = (docr == null ? "" : docr);
+
+                    if(docn.equals(tmnr) && docr.equals("")){
+                        if(tdoc == null){
+                            tdoc = xdoc;
+                        }
+                        else{
+                            srv.deleteDocument(ses, tdoc);
+                        }
                     }
-                    if(!docIds.contains(xdoc.getID())){
-                        docIds.add(xdoc.getID());
-                    }
+                    continue;
                 }
+
+                if(!docIds.contains(xdoc.getID())){
+                    docIds.add(xdoc.getID());
+                }
+
             }
             if(tdoc == null) {
                 tdoc = Utils.createTransmittalDocument(ses, srv, prjt);
@@ -184,7 +204,11 @@ public class TransmittalLoad extends UnifiedAgent {
             tdoc.setDescriptorValue(Conf.Descriptors.Originator,
                     prjt.getDescriptorValue(Conf.Descriptors.Prefix, String.class)
             );
+
+            String tdId = tdoc.getID();
             tdoc.commit();
+            Thread.sleep(2000);
+            tdoc = srv.getDocument4ID(tdId, ses);
 
             proi.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     tmnr);
@@ -195,7 +219,10 @@ public class TransmittalLoad extends UnifiedAgent {
             proi.setDescriptorValue(Conf.Descriptors.DccList,
                     prjt.getDescriptorValue(Conf.Descriptors.DccList, String.class));
 
+            String poId = proi.getID();
+            Thread.sleep(2000);
             proi.commit();
+            proi = (IProcessInstance) srv.getInformationObjectByID(poId, ses);
 
 
             Integer lcnt = 0;
@@ -263,57 +290,19 @@ public class TransmittalLoad extends UnifiedAgent {
                         expFilePaths.add(crsPath);
                     }
                 }
-
-                /*
-                IInformationObject[] lnks = Utils.getChildEngineeringDocuments(docNo, revNo, helper);
-                for(IInformationObject llnk : lnks){
-                    IDocument ldoc = (IDocument) llnk;
-                    if(!ldoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-                    if(linkeds.contains(ldoc.getID())){continue;}
-                    if(!docIds.contains(ldoc.getID())){continue;}
-
-                    lcnt++;
-                    System.out.println("CH-IDOC [" + lcnt + "] *** " + ldoc.getID());
-                    String clfx = (lcnt <= 9 ? "0" : "") + lcnt;
-                    String docLinkNo = ldoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
-                    String revLinkNo = ldoc.getDescriptorValue(Conf.Descriptors.DocRevision, String.class);
-
-                    String expLinkPath = Utils.exportDocument(edoc, exportPath, docLinkNo + "_" + revLinkNo);
-
-                    for (String lkey : ebks.keySet()) {
-                        String linx = lkey + clfx;
-                        String lfld = ebks.getString(lkey);
-                        if(lfld.isEmpty()){continue;}
-                        String lval = "";
-                        if(lfld.equals("@EXPORT_FILE_NAME@")){
-                            lval = Paths.get(expLinkPath).getFileName().toString();
-                            lval = lval.replace("[@SLASH]", "/");
-                        }
-                        if(lval.isEmpty()){
-                            lval = ldoc.getDescriptorValue(lfld, String.class);
-                        }
-                        pbks.put(linx, lval);
-                    }
-                    pbks.put("DocNo" + clfx, docNo);
-                    pbks.put("ChDocNo" + clfx, docLinkNo);
-                    pbks.put("RevNo" + clfx, revLinkNo);
-
-                    expFilePaths.add(expLinkPath);
-
-                    ldoc.setDescriptorValue(Conf.Descriptors.DocTransOutCode, tmnr);
-                    ldoc.commit();
-                    linkeds.add(ldoc.getID());
-
-                    newLinks.add(ldoc.getID());
-                }
-                */
             }
-            /*
-            for(String nlnk : newLinks){
-                links.addInformationObject(nlnk);
+
+            ILink[] tlnks = srv.getReferencedRelationships(ses, tdoc, true);
+            JSONObject tlnkds = new JSONObject();
+            for (ILink tlnk : tlnks) {
+                IInformationObject ttgt = tlnk.getTargetInformationObject();
+                tlnkds.put(ttgt.getID(), tlnk);
             }
-            */
             for(String lnkd : linkeds){
+                if(tlnkds.has(lnkd)){
+                    tlnkds.remove(lnkd);
+                   continue;
+                }
                 ILink lnk1 = srv.createLink(ses, tdoc.getID(), null, lnkd);
                 lnk1.commit();
             }
@@ -350,7 +339,8 @@ public class TransmittalLoad extends UnifiedAgent {
             sdty = (sdty == null ? "" : sdty);
             pbks.put("DoxisLink", "");
             if(sdty.contains("URL")) {
-                pbks.put("DoxisLink", Conf.ExcelTransmittalLink.WebBase + helper.getDocumentURL(tdoc.getID()));
+                JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
+                pbks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(tdoc.getID()));
             }
             String coverExcelPath = Utils.saveTransmittalExcel(tplCoverPath, Conf.ExcelTransmittalSheetIndex.Cover,
                     exportPath + "/" + ctpn + ".xlsx", pbks);
