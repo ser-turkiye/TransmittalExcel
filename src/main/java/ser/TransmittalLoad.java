@@ -209,7 +209,9 @@ public class TransmittalLoad extends UnifiedAgent {
             String tdId = tdoc.getID();
             tdoc.commit();
             Thread.sleep(2000);
-            tdoc = srv.getDocument4ID(tdId, ses);
+            if(!tdId.equals("<new>")) {
+                tdoc = srv.getDocument4ID(tdId, ses);
+            }
 
             proi.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     tmnr);
