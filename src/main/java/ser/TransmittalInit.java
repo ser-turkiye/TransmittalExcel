@@ -13,10 +13,15 @@ import static java.lang.System.out;
 
 
 public class TransmittalInit extends UnifiedAgent {
-    ISession ses;
-    IDocumentServer srv;
+    ISession session;
+    IDocumentServer server;
     IBpmService bpm;
-    private ProcessHelper helper;
+    IProcessInstance processInstance;
+    IInformationObjectLinks transmittalLinks;
+    ProcessHelper helper;
+    ITask task;
+    List<String> documentIds;
+    String transmittalNr;
     @Override
     protected Object execute() {
         if (getEventTask() == null)
@@ -26,27 +31,28 @@ public class TransmittalInit extends UnifiedAgent {
             return resultRestart("Restarting Agent");
         }
 
-        ses = getSes();
-        srv = ses.getDocumentServer();
+        session = getSes();
         bpm = getBpm();
+        server = session.getDocumentServer();
+        task = getEventTask();
+
         try {
-            this.helper = new ProcessHelper(ses);
-            ITask task = getEventTask();
 
-            IProcessInstance proi = task.getProcessInstance();
+            helper = new ProcessHelper(session);
+            processInstance = task.getProcessInstance();
 
-            IInformationObjectLinks links = proi.getLoadedInformationObjectLinks();
-            List<String> docIds = new ArrayList<>();
+            transmittalLinks = processInstance.getLoadedInformationObjectLinks();
+            documentIds = new ArrayList<>();
 
-            for (ILink link : links.getLinks()) {
+            for (ILink link : transmittalLinks.getLinks()) {
                 IDocument xdoc = (IDocument) link.getTargetInformationObject();
                 if (!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-                if (docIds.contains(xdoc.getID())){continue;}
-                docIds.add(xdoc.getID());
+                if (documentIds.contains(xdoc.getID())){continue;}
+                documentIds.add(xdoc.getID());
             }
 
             List<String> newLinks = new ArrayList<>();
-            for (ILink link : links.getLinks()) {
+            for (ILink link : transmittalLinks.getLinks()) {
                 IDocument edoc = (IDocument) link.getTargetInformationObject();
                 if (!edoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
 
@@ -57,23 +63,23 @@ public class TransmittalInit extends UnifiedAgent {
                 for(IInformationObject llnk : lnks) {
                     IDocument ldoc = (IDocument) llnk;
                     if (!ldoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-                    if (docIds.contains(ldoc.getID())){continue;}
+                    if (documentIds.contains(ldoc.getID())){continue;}
                     newLinks.add(ldoc.getID());
                 }
             }
             for(String nlnk : newLinks){
-                links.addInformationObject(nlnk);
+                transmittalLinks.addInformationObject(nlnk);
             }
 
 
-            String tmnr = proi.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
-            if(tmnr == null || tmnr == "") {
-                tmnr = (new CounterHelper(ses, proi.getClassID())).getCounterStr();
-                proi.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
-                        tmnr);
+            transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
+            if(transmittalNr == null || transmittalNr == "") {
+                transmittalNr = (new CounterHelper(session, processInstance.getClassID())).getCounterStr();
+                processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+                        transmittalNr);
             }
 
-            proi.commit();
+            processInstance.commit();
             out.println("Tested.");
 
         } catch (Exception e) {

@@ -3,11 +3,10 @@ package ser;
 import com.ser.blueline.*;
 import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
+import com.ser.blueline.bpm.ITask;
 import com.ser.blueline.bpm.IWorkbasket;
 import com.ser.blueline.metaDataComponents.IArchiveClass;
 import com.ser.blueline.metaDataComponents.IStringMatrix;
-import com.ser.foldermanager.IFolder;
-import com.ser.foldermanager.INode;
 import com.spire.xls.FileFormat;
 import com.spire.xls.Workbook;
 import com.spire.xls.Worksheet;
@@ -31,9 +30,8 @@ import org.json.JSONObject;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -41,7 +39,8 @@ import java.util.zip.ZipOutputStream;
 
 public class Utils {
 
-    static List<JSONObject> getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
+    static List<JSONObject>
+        getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> rtrn = new ArrayList<>();
         IStringMatrix mtrx = getWorkbasketMatrix(ses, srv);
         String[] usrs = users.split("\\;");
@@ -53,7 +52,8 @@ public class Utils {
         }
         return rtrn;
     }
-    static String getWorkbasketEMails(ISession ses, IDocumentServer srv, IBpmService bpm, String users) throws Exception {
+    static String
+        getWorkbasketEMails(ISession ses, IDocumentServer srv, IBpmService bpm, String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(ses, srv, users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -66,7 +66,8 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static String getWorkbasketDisplayNames(ISession ses, IDocumentServer srv, String users) throws Exception {
+    static String
+        getWorkbasketDisplayNames(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(ses, srv, users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -75,7 +76,8 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static void sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
+    static void
+        sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
         JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
 
         String host = mcfg.getString("host");
@@ -178,18 +180,22 @@ public class Utils {
         Transport.send(message);
 
     }
-    static IStringMatrix getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
+    static IStringMatrix
+        getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
         IStringMatrix rtrn = srv.getStringMatrix("CCM_MAIL_CONFIG", ses);
         if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
         return rtrn;
     }
-    static String getFileContent (String path) throws Exception {
+    static String
+        getFileContent (String path) throws Exception {
         return new String(Files.readAllBytes(Paths.get(path)));
     }
-    static JSONObject getMailConfig(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
+    static JSONObject
+        getMailConfig(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
         return getMailConfig(ses, srv, mtpn, null);
     }
-    static JSONObject getMailConfig(ISession ses, IDocumentServer srv, String mtpn, IStringMatrix mtrx) throws Exception {
+    static JSONObject
+        getMailConfig(ISession ses, IDocumentServer srv, String mtpn, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = getMailConfigMatrix(ses, srv, mtpn);
         }
@@ -202,12 +208,14 @@ public class Utils {
         }
         return rtrn;
     }
-    static IStringMatrix getWorkbasketMatrix(ISession ses, IDocumentServer srv) throws Exception {
+    static IStringMatrix
+        getWorkbasketMatrix(ISession ses, IDocumentServer srv) throws Exception {
         IStringMatrix rtrn = srv.getStringMatrixByID("Workbaskets", ses);
         if (rtrn == null) throw new Exception("Workbaskets Global Value List not found");
         return rtrn;
     }
-    static JSONObject getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
+    static JSONObject
+        getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = getWorkbasketMatrix(ses, srv);
         }
@@ -230,23 +238,8 @@ public class Utils {
         }
         return null;
     }
-    /*
-    static IDocument createTransmittalDocument(ISession ses, IDocumentServer srv, IInformationObject infObj)  {
-
-        IArchiveClass ac = srv.getArchiveClass(Conf.ClassIDs.TransmittalDocument, ses);
-        IDatabase db = ses.getDatabase(ac.getDefaultDatabaseID());
-
-        IDocument rtrn = srv.getClassFactory().getDocumentInstance(db.getDatabaseName(), ac.getID(), "0000" , ses);
-        rtrn.commit();
-        //srv.copyDocument2(ses, (IDocument) infObj, rtrn, CopyScope.COPY_DESCRIPTORS);
-
-        rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
-        rtrn.commit();
-
-        return rtrn;
-    }
-    */
-    static IDocument createTransmittalDocument(ISession ses, IDocumentServer srv, IInformationObject infObj)  {
+    static IDocument
+        createTransmittalDocument(ISession ses, IDocumentServer srv, IInformationObject infObj)  {
 
         IArchiveClass ac = srv.getArchiveClass(Conf.ClassIDs.EngineeringDocument, ses);
         IDatabase db = ses.getDatabase(ac.getDefaultDatabaseID());
@@ -260,45 +253,94 @@ public class Utils {
 
         return rtrn;
     }
-    static void copyFile(String spth, String tpth) throws Exception {
+    static void
+        copyFile(String spth, String tpth) throws Exception {
         FileUtils.copyFile(new File(spth), new File(tpth));
     }
-    static void updateTransmittalDocument(IDocument tdoc, String mainPath,  String pdfPath, String zipPath) throws Exception {
+    static void
+        saveDuration(IProcessInstance processInstance) throws Exception {
+
+        Collection<ITask> tsks = processInstance.findTasks();
+
+        Date tbgn = null, tend = null;
+        for(ITask ttsk : tsks){
+            if(ttsk.getCreationDate() != null
+                    && (tbgn == null  || tbgn.after(ttsk.getCreationDate()))){
+                tbgn = ttsk.getCreationDate();
+            }
+            if(ttsk.getFinishedDate() != null
+                    && (tend == null  || tend.before(ttsk.getFinishedDate()))){
+                tend = ttsk.getFinishedDate();
+            }
+        }
+
+        long durd  = 0L;
+        double durh  = 0.0;
+        if(tend != null && tbgn != null) {
+            processInstance.setDescriptorValueTyped("ccmPrjProcStart",
+                    tbgn);
+            processInstance.setDescriptorValueTyped("ccmPrjProcFinish",
+                    tend);
+
+            long diff = (tend.getTime() > tbgn.getTime() ? tend.getTime() - tbgn.getTime() : tbgn.getTime() - tend.getTime());
+            durd = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+            durh = ((TimeUnit.MINUTES.convert(diff, TimeUnit.MILLISECONDS) - (durd * 24 * 60)) * 100 / 60) / 100d;
+        }
+
+        processInstance.setDescriptorValueTyped("ccmPrjProcDurDay",
+                Integer.valueOf(durd + ""));
+        processInstance.setDescriptorValueTyped("ccmPrjProcDurHour",
+                durh);
+
+
+    }
+    static void
+        addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
         String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
 
         String _pdfPath = "";
+        boolean frep = (tdoc.getRepresentationList().length > 0);
         if(!pdfPath.isEmpty()) {
-            _pdfPath = mainPath + "/Cover_Preview[" + tmnr + "]." + FilenameUtils.getExtension(pdfPath);
+            _pdfPath = mainPath + "/" + (frep ? "Cover_Preview[" + tmnr + "]" : tmnr) + "." + FilenameUtils.getExtension(pdfPath);
             Utils.copyFile(pdfPath, _pdfPath);
 
             IRepresentation pdfr = tdoc.addRepresentation(".pdf", "Cover_Preview");
             IDocumentPart ipdf = pdfr.addPartDocument(_pdfPath);
-            //String updf = ipdf.getRetrievalURLs()[0];
-            tdoc.setDefaultRepresentation(0);
+            tdoc.setDefaultRepresentation(tdoc.getRepresentationList().length - 1);
+            frep = (tdoc.getRepresentationList().length > 0);
+        }
+        String _xlsxPath = "";
+        if(!xlsxPath.isEmpty()) {
+            _xlsxPath = mainPath + "/" + (frep ? "Cover_Excel[" + tmnr + "]" : tmnr) + "." + FilenameUtils.getExtension(xlsxPath);
+            Utils.copyFile(xlsxPath, _xlsxPath);
+
+            IRepresentation xlsxr = tdoc.addRepresentation(".xlsx", "Cover_Excel");
+            xlsxr.addPartDocument(_xlsxPath);
+            frep = (tdoc.getRepresentationList().length > 0);
         }
         String _zipPath = "";
         if(!zipPath.isEmpty()) {
-            _zipPath = mainPath + "/Eng_Documents[" + tmnr + "]." + FilenameUtils.getExtension(zipPath);
+            _zipPath = mainPath + "/" + (frep ? "Eng_Documents[" + tmnr + "]" : tmnr) + "." + FilenameUtils.getExtension(zipPath);
             Utils.copyFile(zipPath, _zipPath);
 
-            IRepresentation zipr = tdoc.addRepresentation(".zip", "Files");
+            IRepresentation zipr = tdoc.addRepresentation(".zip", "Eng_Documents");
             zipr.addPartDocument(_zipPath);
+            frep = (tdoc.getRepresentationList().length > 0);
         }
-        //rtrn.setDefaultRepresentation(rtrn.getRepresentationCount()-1);
-        //tdoc.setDefaultRepresentation(0);
-
-        //tdoc.commit();
-
-        /*
-        if(!_pdfPath.isEmpty()){
-            Files.deleteIfExists(Paths.get(_pdfPath));
-        }
-        if(!_zipPath.isEmpty()){
-            Files.deleteIfExists(Paths.get(_zipPath));
-        }
-        */
     }
-    static IProcessInstance createEngineeringProjectTransmittal(IDocument doc, ProcessHelper helper) throws Exception {
+    static String
+        getTransmittalReprExport(IDocument tdoc, String type, String desc, String exportPath, String fileName) throws Exception {
+        String rtrn = "";
+        IRepresentation[] reps = tdoc.getRepresentationList();
+        for(IRepresentation repr : reps){
+            if(!repr.getType().equals(type)){continue;}
+            if(!repr.getDescription().equals(desc)){continue;}
+            rtrn = exportRepresentation(tdoc, repr.getRepresentationNumber(), exportPath, fileName);
+        }
+        return rtrn;
+    }
+    static IProcessInstance
+        createEngineeringProjectTransmittal(IDocument doc, ProcessHelper helper) throws Exception {
         IProcessInstance rtrn = helper.buildNewProcessInstanceForID(Conf.ClassIDs.EngineeringProjectTransmittal);
         if (rtrn == null) throw new Exception("Engineering Project Transmittal couldn't be created");
 
@@ -307,19 +349,8 @@ public class Utils {
         //rtrn.commit();
         return rtrn;
     }
-    public static void deleteRow(Sheet sheet, int rowNo) throws IOException {
-            int lastRowNum = sheet.getLastRowNum();
-            if (rowNo >= 0 && rowNo < lastRowNum) {
-                sheet.shiftRows(rowNo + 1, lastRowNum, -1);
-            }
-            if (rowNo == lastRowNum) {
-                Row removingRow=sheet.getRow(rowNo);
-                if(removingRow != null) {
-                    sheet.removeRow(removingRow);
-                }
-            }
-    }
-    public static void removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws IOException {
+    public static void
+        removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws IOException {
 
         FileInputStream tist = new FileInputStream(spth);
         XSSFWorkbook twrb = new XSSFWorkbook(tist);
@@ -348,8 +379,10 @@ public class Utils {
         tost.close();
 
     }
-    public static String saveTransmittalExcel(String templatePath, Integer shtIx, String tpltSavePath, JSONObject pbks) throws IOException {
-
+    public static String
+        saveTransmittalExcel(String templatePath, Integer shtIx, String tpltSavePath,
+                             JSONObject pbks, List<String> docLines, List<String> dstLines) throws IOException {
+        String rtrn = tpltSavePath+"";
         FileInputStream tist = new FileInputStream(templatePath);
         XSSFWorkbook twrb = new XSSFWorkbook(tist);
 
@@ -378,19 +411,155 @@ public class Utils {
                 }
             }
         }
-        FileOutputStream tost = new FileOutputStream(tpltSavePath);
+        FileOutputStream tost = new FileOutputStream(rtrn);
         twrb.write(tost);
         tost.close();
-        return tpltSavePath;
+
+        Utils.removeRows(rtrn, rtrn,
+                Conf.ExcelTransmittalSheetIndex.Cover,
+                Conf.ExcelTransmittalRowGroups.CoverDocs,
+                Conf.ExcelTransmittalRowGroups.CoverDocColInx,
+                Conf.ExcelTransmittalRowGroups.CoverHideCols,
+                docLines);
+
+        Utils.removeRows(rtrn, rtrn,
+                Conf.ExcelTransmittalSheetIndex.Mail,
+                Conf.ExcelTransmittalRowGroups.MailDists,
+                Conf.ExcelTransmittalRowGroups.MailDistColInx,
+                Conf.ExcelTransmittalRowGroups.MailDistHideCols,
+                dstLines);
+
+        return rtrn;
     }
-    public static boolean hasDescriptor(IInformationObject infObj, String dscn) throws Exception {
+    public static boolean
+        hasDescriptor(IInformationObject infObj, String dscn) throws Exception {
         IValueDescriptor[] vds = infObj.getDescriptorList();
         for(IValueDescriptor vd : vds){
             if(vd.getName().equals(dscn)){return true;}
         }
         return false;
     }
-    public static String convertExcelToPdf(String excelPath, String pdfPath)  {
+    public static List<String>
+        excelDstTblLines(JSONObject bookmarks) throws Exception{
+        List rtrn = new ArrayList<>();
+
+        for(int p=1;p<=5;p++){
+            String plfx = (p <= 9 ? "0" : "") + p;
+            if(!bookmarks.has(Conf.Bookmarks.DistributionMaster + plfx)){continue;}
+            if(bookmarks.getString(Conf.Bookmarks.DistributionMaster + plfx) == ""){continue;}
+
+            if(!rtrn.contains("CMT01")){rtrn.add("CMT01");}
+            if(!rtrn.contains("HDR01")){rtrn.add("HDR01");}
+            if(!rtrn.contains(plfx)){rtrn.add(plfx);}
+        }
+        return rtrn;
+    }
+    public static List<String>
+        excelDocTblLines(JSONObject bookmarks) throws Exception{
+        List rtrn = new ArrayList<>();
+        for(int l=1;l<=50;l++){
+            String llfx = (l <= 9 ? "0" : "") + l;
+            if(!bookmarks.has(Conf.Bookmarks.EngDocumentMaster + llfx)){continue;}
+            if(bookmarks.getString(Conf.Bookmarks.EngDocumentMaster + llfx) == ""){continue;}
+
+            if(!rtrn.contains("CMT01")){rtrn.add("CMT01");}
+            if(!rtrn.contains("HDR01")){rtrn.add("HDR01");}
+            if(!rtrn.contains(llfx)){rtrn.add(llfx);}
+        }
+        return rtrn;
+    }
+    public static JSONObject
+        loadBookmarks(ISession session, IDocumentServer server, String transmittalNr, IInformationObjectLinks transmittalLinks,
+                                           List<String> linkedDocIds, List<String> documentIds,
+                                           IProcessInstance processInstance, IDocument transmittalDoc) throws Exception{
+        JSONObject rtrn = new JSONObject();
+        JSONObject pbks = Conf.Bookmarks.projectWorkspace();
+        JSONObject pbts = Conf.Bookmarks.projectWorkspaceTypes();
+        JSONObject ebks = Conf.Bookmarks.engDocument();
+
+        for (String pkey : pbks.keySet()) {
+            String pfld = pbks.getString(pkey);
+            if(pfld.isEmpty()){continue;}
+            System.out.println("&&& PFLD [" + pkey + "] *** " + pfld);
+
+            rtrn.put(pkey, "");
+            if(!Utils.hasDescriptor((IInformationObject) processInstance, pfld)) {continue;}
+
+
+            if(pbts.has(pkey) && pbts.get(pkey) == Integer.class){
+                Integer pvalInteger = processInstance.getDescriptorValue(pfld, Integer.class);
+                if(pvalInteger != null && Utils.hasDescriptor((IInformationObject) transmittalDoc, pfld)) {
+                    transmittalDoc.setDescriptorValueTyped(pfld, pvalInteger);
+                }
+                rtrn.put(pkey, (pvalInteger == null ? "" : pvalInteger.toString()));
+                continue;
+
+            }
+            if(pbts.has(pkey) && pbts.get(pkey) == Double.class){
+                Double pvalDouble = processInstance.getDescriptorValue(pfld, Double.class);
+                if(pvalDouble != null && Utils.hasDescriptor((IInformationObject) transmittalDoc, pfld)) {
+                    transmittalDoc.setDescriptorValueTyped(pfld, pvalDouble);
+                }
+                rtrn.put(pkey, (pvalDouble == null ? "" : pvalDouble.toString()));
+                continue;
+            }
+
+            String pvalString = processInstance.getDescriptorValue(pfld, String.class);
+            if(pvalString != null && Utils.hasDescriptor((IInformationObject) transmittalDoc, pfld)) {
+                transmittalDoc.setDescriptorValueTyped(pfld, pvalString);
+            }
+            rtrn.put(pkey, (pvalString == null ? "" : pvalString));
+
+        }
+        rtrn.put("TransmittalNo", transmittalNr);
+
+        String tuss = Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("To"));
+        rtrn.put("To", tuss);
+
+        String auss = Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Attention"));
+        rtrn.put("Attention", auss);
+
+        String cuss = Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("CC"));
+        rtrn.put("CC", cuss);
+
+        int lcnt = 0;
+        for (ILink link : transmittalLinks.getLinks()) {
+            IDocument edoc = (IDocument) link.getTargetInformationObject();
+            if(!edoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
+            if(linkedDocIds.size() > 0 && !linkedDocIds.contains(edoc.getID())){continue;}
+            if(!documentIds.contains(edoc.getID())){continue;}
+
+            String parentDocNo = edoc.getDescriptorValue(Conf.Descriptors.ParentDocNumber, String.class);
+            parentDocNo = parentDocNo == null ? "" : parentDocNo;
+
+            String parentRevNo = edoc.getDescriptorValue(Conf.Descriptors.ParentDocRevision, String.class);
+            parentRevNo = parentRevNo == null ? "" : parentRevNo;
+
+
+            String parentDoc = parentDocNo + (!parentDocNo.isEmpty() && !parentRevNo.isEmpty() ? "/" : "") + parentRevNo;
+
+            lcnt++;
+            System.out.println("IDOC [" + lcnt + "] *** " + edoc.getID());
+            String llfx = (lcnt <= 9 ? "0" : "") + lcnt;
+
+            for (String ekey : ebks.keySet()) {
+                String einx = ekey + llfx;
+                String efld = ebks.getString(ekey);
+                if(efld.isEmpty()){continue;}
+                String eval = "";
+                if(eval.isEmpty()){
+                    eval = edoc.getDescriptorValue(efld, String.class);
+                }
+                rtrn.put(einx, eval);
+            }
+
+            rtrn.put("ParentDoc" + llfx, parentDoc);
+
+        }
+        return rtrn;
+    }
+    public static String
+        convertExcelToPdf(String excelPath, String pdfPath)  {
         Workbook workbook = new Workbook();
         workbook.loadFromFile(excelPath);
         workbook.getConverterSetting().setSheetFitToPage(true);
@@ -398,8 +567,8 @@ public class Utils {
 
         return pdfPath;
     }
-
-    public static String convertExcelToHtml(String excelPath, String htmlPath)  {
+    public static String
+        convertExcelToHtml(String excelPath, String htmlPath)  {
         Workbook workbook = new Workbook();
         workbook.loadFromFile(excelPath);
         Worksheet sheet = workbook.getWorksheets().get(0);
@@ -408,13 +577,14 @@ public class Utils {
         sheet.saveToHtml(htmlPath, options);
         return htmlPath;
     }
-    public static String zipFiles(String zipPath, String tpltSavePath, List<String> expFilePaths) throws IOException {
+    public static String
+        zipFiles(String zipPath, String pdfPath, List<String> expFilePaths) throws IOException {
         ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(new File(zipPath)));
-        if(!tpltSavePath.isEmpty()) {
+        if(!pdfPath.isEmpty()) {
             //ZipEntry zltp = new ZipEntry("00." + Paths.get(tpltSavePath).getFileName().toString());
-            ZipEntry zltp = new ZipEntry("_Transmittal." + FilenameUtils.getExtension(tpltSavePath));
+            ZipEntry zltp = new ZipEntry("_Transmittal." + FilenameUtils.getExtension(pdfPath));
             zout.putNextEntry(zltp);
-            byte[] zdtp = Files.readAllBytes(Paths.get(tpltSavePath));
+            byte[] zdtp = Files.readAllBytes(Paths.get(pdfPath));
             zout.write(zdtp, 0, zdtp.length);
             zout.closeEntry();
         }
@@ -432,8 +602,8 @@ public class Utils {
         zout.close();
         return zipPath;
     }
-
-    public static String exportDocument(IDocument document, String exportPath, String fileName) throws IOException {
+    public static String
+        exportDocument(IDocument document, String exportPath, String fileName) throws IOException {
         String rtrn ="";
         IDocumentPart partDocument = document.getPartDocument(document.getDefaultRepresentation() , 0);
         String fName = (!fileName.isEmpty() ? fileName : partDocument.getFilename());
@@ -454,11 +624,30 @@ public class Utils {
         }
         return rtrn;
     }
-    public static INode getNode(IFolder fold, String fldn){
-        List<INode> nodesByName = fold.getNodesByName(fldn);
-        return fold.getNodeByID(nodesByName.get(0).getID());
+    public static String
+        exportRepresentation(IDocument document, int rinx, String exportPath, String fileName) throws IOException {
+        String rtrn ="";
+        IDocumentPart partDocument = document.getPartDocument(rinx , 0);
+        String fName = (!fileName.isEmpty() ? fileName : partDocument.getFilename());
+        fName = fName.replaceAll("[\\\\/:*?\"<>|]", "_");
+        try (InputStream inputStream = partDocument.getRawDataAsStream()) {
+            IFDE fde = partDocument.getFDE();
+            if (fde.getFDEType() == IFDE.FILE) {
+                rtrn = exportPath + "/" + fName + "." + ((IFileFDE) fde).getShortFormatDescription();
+
+                try (FileOutputStream fileOutputStream = new FileOutputStream(rtrn)){
+                    byte[] bytes = new byte[2048];
+                    int length;
+                    while ((length = inputStream.read(bytes)) > -1) {
+                        fileOutputStream.write(bytes, 0, length);
+                    }
+                }
+            }
+        }
+        return rtrn;
     }
-    public static JSONObject getDataOfTransmittal(XSSFWorkbook workbook, Integer shtIx) throws IOException {
+    public static JSONObject
+        getDataOfTransmittal(XSSFWorkbook workbook, Integer shtIx) throws IOException {
         JSONObject rtrn = new JSONObject();
         Sheet sheet = workbook.getSheetAt(shtIx);
         rtrn.put("ProjectNo", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.ProjectNo));
@@ -474,15 +663,16 @@ public class Utils {
         rtrn.put("Notes", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.Notes));
         return rtrn;
     }
-    public static String getCellValue(Sheet sheet, String refn){
+    public static String
+        getCellValue(Sheet sheet, String refn){
 
         CellReference cr = new CellReference(refn);
         Row row = sheet.getRow(cr.getRow());
         Cell rtrn = row.getCell(cr.getCol());
         return rtrn.getRichStringCellValue().getString();
     }
-
-    public static String updateCell(String str, JSONObject bookmarks){
+    public static String
+        updateCell(String str, JSONObject bookmarks){
         StringBuffer rtr1 = new StringBuffer();
         String tmp = str + "";
         Pattern ptr1 = Pattern.compile( "\\{([\\w\\.]+)\\}" );
@@ -500,12 +690,12 @@ public class Utils {
 
         return tmp;
     }
-
-    static IInformationObject getProjectWorkspace(String prjn, ProcessHelper helper) {
+    static IInformationObject
+        getProjectWorkspace(String prjn, ProcessHelper helper) {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjCardCode).append(" = '").append(prjn).append("'");
+                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjn).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
@@ -513,13 +703,14 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IInformationObject getEngineeringCRS(String refn, ProcessHelper helper) {
+    static IInformationObject
+        getEngineeringCRS(String refn, ProcessHelper helper) {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringCRS).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjDocDocType).append(" = '").append("CRS").append("'")
+                .append(Conf.DescriptorLiterals.PrjDocDocType).append(" = '").append("CRS").append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMReferenceNumber).append(" = '").append(refn).append("'");
+                .append(Conf.DescriptorLiterals.ReferenceNumber).append(" = '").append(refn).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
@@ -527,11 +718,12 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IDocument getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
+    static IDocument
+        getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjCardCode).append(" = '").append(prjNo).append("'")
+                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjNo).append("'")
                 .append(" AND ")
                 .append(Conf.DescriptorLiterals.ObjectNumberExternal).append(" = '").append(tpltName).append("'");
         String whereClause = builder.toString();
@@ -541,25 +733,27 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    static IInformationObject[] getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
+    static IInformationObject[]
+        getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjDocParentDoc).append(" = '").append(docNo).append("'")
+                .append(Conf.DescriptorLiterals.PrjDocParentDoc).append(" = '").append(docNo).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjDocParentDocRevision).append(" = '").append(revNo).append("'");
+                .append(Conf.DescriptorLiterals.PrjDocParentDocRevision).append(" = '").append(revNo).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
         return helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause, 0);
     }
-    static IDocument getEngineeringDocument(String docNo, String revNo, ProcessHelper helper)  {
+    static IDocument
+        getEngineeringDocument(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjDocNumber).append(" = '").append(docNo).append("'")
+                .append(Conf.DescriptorLiterals.PrjDocNumber).append(" = '").append(docNo).append("'")
                 .append(" AND ")
-                .append(Conf.DescriptorLiterals.CCMPrjDocRevision).append(" = '").append(revNo).append("'");
+                .append(Conf.DescriptorLiterals.PrjDocRevision).append(" = '").append(revNo).append("'");
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
@@ -567,7 +761,23 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    public static List<JSONObject> getListOfDocuments(XSSFWorkbook workbook)  {
+    static IDocument
+    getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.PrjDocNumber).append(" = '").append(docNo).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.PrjDocDocType).append(" = '").append("Transmittal-Outgoing").append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause , 1);
+        if(informationObjects.length < 1) {return null;}
+        return (IDocument) informationObjects[0];
+    }
+    public static List<JSONObject>
+        getListOfDocuments(XSSFWorkbook workbook)  {
         List<JSONObject> rtrn = new ArrayList<>();
         Sheet sheet = workbook.getSheetAt(0);
 
@@ -594,7 +804,8 @@ public class Utils {
         }
         return rtrn;
     }
-    public static JSONObject getRowGroups(Sheet sheet, String prfx, Integer colIx)  {
+    public static JSONObject
+        getRowGroups(Sheet sheet, String prfx, Integer colIx)  {
         JSONObject rtrn = new JSONObject();
         for (Row row : sheet) {
             Cell cll1 = row.getCell(colIx);
@@ -612,8 +823,8 @@ public class Utils {
         }
         return rtrn;
     }
-
-    public static List<JSONObject> listOfDistributions(XSSFWorkbook workbook, Integer shtIx)  {
+    public static List<JSONObject>
+        listOfDistributions(XSSFWorkbook workbook, Integer shtIx)  {
         List<JSONObject> rtrn = new ArrayList<>();
         Sheet sheet = workbook.getSheetAt(shtIx);
 

@@ -89,14 +89,14 @@ public class Conf {
     }
 
     public static class DescriptorLiterals{
-        public static final String CCMPrjDocNumber = "CCMPRJDOCNUMBER";
-        public static final String CCMPrjCardCode = "CCMPRJCARD_CODE";
+        public static final String PrjDocNumber = "CCMPRJDOCNUMBER";
+        public static final String PrjCardCode = "CCMPRJCARD_CODE";
         public static final String ObjectNumberExternal = "OBJECTNUMBER2";
-        public static final String CCMPrjDocRevision = "CCMPRJDOCREVISION";
-        public static final String CCMReferenceNumber = "CCMREFERENCENUMBER";
-        public static final String CCMPrjDocDocType = "CCMPRJDOCDOCTYPE";
-        public static final String CCMPrjDocParentDoc = "CCMPRJDOCPARENTDOC";
-        public static final String CCMPrjDocParentDocRevision = "CCMPRJDOCPARENTDOCREVISION";
+        public static final String PrjDocRevision = "CCMPRJDOCREVISION";
+        public static final String ReferenceNumber = "CCMREFERENCENUMBER";
+        public static final String PrjDocDocType = "CCMPRJDOCDOCTYPE";
+        public static final String PrjDocParentDoc = "CCMPRJDOCPARENTDOC";
+        public static final String PrjDocParentDocRevision = "CCMPRJDOCPARENTDOCREVISION";
 
     }
     public static class ClassIDs{
@@ -121,13 +121,13 @@ public class Conf {
     public static class Bookmarks{
 
 
-        public  static final JSONObject ProjectWorkspaceTypes() {
+        public  static final JSONObject projectWorkspaceTypes() {
             JSONObject rtrn = new JSONObject();
             rtrn.put("DurDay", Integer.class);
             rtrn.put("DurHour", Double.class);
             return rtrn;
         }
-        public  static final JSONObject ProjectWorkspace() {
+        public  static final JSONObject projectWorkspace() {
             JSONObject rtrn = new JSONObject();
             rtrn.put("ProjectNo", "ccmPRJCard_code");
             rtrn.put("ProjectName", "ccmPRJCard_name");
@@ -144,7 +144,7 @@ public class Conf {
             rtrn.put("DurDay", "ccmPrjProcDurDay");
             rtrn.put("DurHour", "ccmPrjProcDurHour");
 
-            JSONObject ebks = EngDocument();
+            JSONObject ebks = engDocument();
             for (String ekey : ebks.keySet()) {
                 for(int p=1;p<=50;p++){
                     String einx = ekey + (p <= 9 ? "0" : "") + p;
@@ -152,7 +152,7 @@ public class Conf {
                 }
             }
 
-            JSONObject dbks = Distribution();
+            JSONObject dbks = distribution();
             for (String dkey : dbks.keySet()) {
                 String dfkl = dbks.getString(dkey);
                 for(int p=1;p<=5;p++){
@@ -176,7 +176,7 @@ public class Conf {
         }
 
         public static final String DistributionMaster = "DistUser";
-        public  static final JSONObject Distribution() {
+        public  static final JSONObject distribution() {
             JSONObject rtrn = new JSONObject();
             rtrn.put("DistUser", "ccmDistUser##");
             rtrn.put("DistPurpose", "ccmDistPurpose##");
@@ -186,15 +186,15 @@ public class Conf {
             return rtrn;
         }
         public static final String EngDocumentMaster = "DocNo";
-        public  static final JSONObject EngDocument() {
+        public  static final JSONObject engDocument() {
             JSONObject rtrn = new JSONObject();
             rtrn.put("DocNo", "ccmPrjDocNumber");
             rtrn.put("RevNo", "ccmPrjDocRevision");
             rtrn.put("ParentDoc", "");
             rtrn.put("Desc", "ObjectName");
             rtrn.put("Issue", "ccmPrjDocIssueStatus");
-            //rtrn.put("FileName", "ccmPrjDocFileName");
-            rtrn.put("FileName", "@EXPORT_FILE_NAME@");
+            rtrn.put("FileName", "ccmPrjDocFileName");
+            //rtrn.put("FileName", "@EXPORT_FILE_NAME@");
             rtrn.put("Remarks", "");
 
             return rtrn;

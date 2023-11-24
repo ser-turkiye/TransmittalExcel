@@ -83,8 +83,8 @@ public class TransmittalTest extends UnifiedAgent {
              */
             /*
             IInformationObject[] lnks = Utils.getChildEngineeringDocuments(
-                document.getDescriptorValue(Conf.Descriptors.CCMPrjDocNumber, String.class),
-                document.getDescriptorValue(Conf.Descriptors.CCMPrjDocRevision, String.class),
+                document.getDescriptorValue(Conf.Descriptors.PrjDocNumber, String.class),
+                document.getDescriptorValue(Conf.Descriptors.PrjDocRevision, String.class),
                 helper
             );
             */
@@ -96,7 +96,7 @@ public class TransmittalTest extends UnifiedAgent {
 
 
 
-            //JSONObject bkms = Conf.Bookmarks.ProjectWorkspace();
+            //JSONObject bkms = Conf.Bookmarks.projectWorkspace();
             //JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
 
             /*
