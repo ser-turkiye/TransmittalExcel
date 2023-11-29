@@ -29,6 +29,8 @@ public class TransmittalFromExcel extends UnifiedAgent {
         server = session.getDocumentServer();
         IDocument document = getEventDocument();
 
+        com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
+
         try {
 
             helper = new ProcessHelper(getSes());
@@ -50,9 +52,8 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 throw new Exception("Project not found.");
             }
 
-            transmittalDoc = Utils.createTransmittalDocument(session, server, projectInfObj);
             JSONObject xbks = Conf.Bookmarks.projectWorkspace();
-            processInstance = Utils.createEngineeringProjectTransmittal(transmittalDoc, helper);
+            processInstance = Utils.createEngineeringProjectTransmittal(helper);
 
             List<JSONObject> dist = Utils.listOfDistributions(fwrb, Conf.ExcelTransmittalSheetIndex.FromExcel);
             int scnt = 0;
@@ -72,15 +73,12 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 }
                 if(distPurpose.isEmpty() == false){
                     processInstance.setDescriptorValue(distPurpose, ldst.getString("purpose"));
-                    //transmittalDoc.setDescriptorValue(distPurpose, ldst.getString("purpose"));
                 }
                 if(distDlvMethod.isEmpty() == false){
                     processInstance.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
-                    //transmittalDoc.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
                 }
                 if(distDueDate.isEmpty() == false){
                     //processInstance.setDescriptorValue(distDueDate, ldst.getString("dueDate"));
-                    //transmittalDoc.setDescriptorValue(distDueDate, ldst.getString("dueDate"));
                 }
             }
 
@@ -95,84 +93,37 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 if(dval.isEmpty()){continue;}
 
                 processInstance.setDescriptorValue(pfld, dval);
-                //transmittalDoc.setDescriptorValue(pfld, dval);
-
             }
             transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
             if(transmittalNr == null || transmittalNr == "") {
                 transmittalNr = (new CounterHelper(session, processInstance.getClassID())).getCounterStr();
             }
 
-            String tuss = Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("To-Receiver", String.class));
-            processInstance.setDescriptorValue("To-Receiver", tuss);
-            //transmittalDoc.setDescriptorValue("To-Receiver", tuss);
-
-            String auss = Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("ObjectAuthors", String.class));
-            processInstance.setDescriptorValue("ObjectAuthors", auss);
-            //transmittalDoc.setDescriptorValue("ObjectAuthors", auss);
-
-            String cuss = Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("CC-Receiver", String.class));
-            processInstance.setDescriptorValue("CC-Receiver", cuss);
-            //transmittalDoc.setDescriptorValue("CC-Receiver", cuss);
-
-            processInstance.setDescriptorValue("ObjectNumberExternal", transmittalNr);
-            //transmittalDoc.setDescriptorValue("ObjectNumberExternal", tmnr);
-
-
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+            processInstance.setDescriptorValue("ObjectNumberExternal",
                     transmittalNr);
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.ProjectNo,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.ProjectName,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.DccList,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
-
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocNumber, transmittalNr);
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocRevision, "");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocType, "Transmittal-Outgoing");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.FileName, "" + transmittalNr + ".pdf");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectName, "Transmittal Cover Page");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.Category, "Transmittal");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.Originator,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.Prefix, String.class)
-            );
-
-
-            String tdId = transmittalDoc.getID();
-            transmittalDoc.commit();
-            Thread.sleep(2000);
-            if(!tdId.equals("<new>")) {
-                transmittalDoc = server.getDocument4ID(tdId, session);
-            }
 
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
-
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectName,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
-
             processInstance.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
 
-            String poId = processInstance.getID();
-            Thread.sleep(2000);
-            processInstance.commit();
-            if(!poId.equals("<new>")) {
-                processInstance = (IProcessInstance) server.getInformationObjectByID(poId, session);
-            }
+            processInstance.setDescriptorValue("To-Receiver",
+                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("To-Receiver", String.class)));
+            processInstance.setDescriptorValue("ObjectAuthors",
+                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("ObjectAuthors", String.class)));
+            processInstance.setDescriptorValue("CC-Receiver",
+                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("CC-Receiver", String.class)));
 
 
-
-            document.setDescriptorValue("ccmPrjDocNumber", "Transmittal Excel [" + transmittalNr + "]");
+            document.setDescriptorValue("ccmPrjDocNumber", transmittalNr + "/Import-Excel");
             document.commit();
 
             IInformationObjectLinks links = processInstance.getLoadedInformationObjectLinks();
 
             List<JSONObject> docs = Utils.getListOfDocuments(fwrb);
-            //int lcnt = 0;
             for (JSONObject ldoc : docs) {
-                //lcnt++;
                 if(ldoc.get("docNo") == null){continue;}
                 if(ldoc.get("revNo") == null){continue;}
 
@@ -180,14 +131,12 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 if(edoc == null){continue;}
 
                 links.addInformationObject(edoc.getID());
-
             }
 
-            links.addInformationObject(transmittalDoc.getID());
-            links.addInformationObject(document.getID());
-            processInstance.commit();
-            transmittalDoc.commit();
+            processInstance = Utils.updateProcessInstance(processInstance);
 
+            ILink lnk1 = server.createLink(session, processInstance.getID(), null, document.getID());
+            lnk1.commit();
 
         } catch (Exception e) {
             //throw new RuntimeException(e);

@@ -97,6 +97,7 @@ public class Conf {
         public static final String PrjDocDocType = "CCMPRJDOCDOCTYPE";
         public static final String PrjDocParentDoc = "CCMPRJDOCPARENTDOC";
         public static final String PrjDocParentDocRevision = "CCMPRJDOCPARENTDOCREVISION";
+        public static final String ObjectType = "OBJECTTYPE";
 
     }
     public static class ClassIDs{
@@ -144,6 +145,11 @@ public class Conf {
             rtrn.put("DurDay", "ccmPrjProcDurDay");
             rtrn.put("DurHour", "ccmPrjProcDurHour");
 
+            rtrn.put("Approved", "ccmApproved");
+            rtrn.put("ApprovedDate", "");
+            rtrn.put("Originated", "ccmOriginated");
+            rtrn.put("OriginatedDate", "");
+
             JSONObject ebks = engDocument();
             for (String ekey : ebks.keySet()) {
                 for(int p=1;p<=50;p++){
@@ -167,10 +173,12 @@ public class Conf {
             rtrn.put("OrigndFullname", "");
             rtrn.put("OrigndJobTitle", "");
             rtrn.put("OrigndDate", "");
+            rtrn.put("OrigndSignature", "");
 
             rtrn.put("ApprvdFullname", "");
             rtrn.put("ApprvdJobTitle", "");
             rtrn.put("ApprvdDate", "");
+            rtrn.put("ApprvdSignature", "");
 
             return rtrn;
         }

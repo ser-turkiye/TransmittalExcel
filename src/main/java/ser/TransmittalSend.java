@@ -5,6 +5,7 @@ import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -59,8 +60,7 @@ public class TransmittalSend extends UnifiedAgent {
             transmittalLinks = processInstance.getLoadedInformationObjectLinks();
 
             transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
-
-            if(transmittalNr == null || transmittalNr == "") {
+            if(transmittalNr == null || transmittalNr.isEmpty()) {
                 throw new Exception("Transmittal no is empty.");
             }
 
@@ -73,6 +73,11 @@ public class TransmittalSend extends UnifiedAgent {
                 throw new Exception("Project not found [" + projectNo + "].");
             }
 
+            transmittalDoc = (IDocument) processInstance.getMainInformationObject();
+            if(transmittalDoc == null) {
+                throw new Exception("Transmittal-Document not found.");
+            }
+
             String mtpn = "TRANSMITTAL_MAIL";
             IDocument mtpl = Utils.getTemplateDocument(projectNo, mtpn, helper);
             if(mtpl == null){
@@ -80,68 +85,51 @@ public class TransmittalSend extends UnifiedAgent {
             }
             String tplMailPath = Utils.exportDocument(mtpl, exportPath, mtpn);
 
-            transmittalDoc = null;
-            documentIds = new ArrayList<>();
-            for (ILink link : transmittalLinks.getLinks()) {
-                IDocument xdoc = (IDocument) link.getTargetInformationObject();
-                if(!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
 
-                String dtyp = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
-                dtyp = (dtyp == null ? "" : dtyp);
-
-                if(!dtyp.equals("Transmittal-Outgoing")) {
-                    if(!documentIds.contains(xdoc.getID())) {
-                        documentIds.add(xdoc.getID());
-                    }
-                    continue;
-                }
-
-                String docn = xdoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
-                String docr = xdoc.getDescriptorValue(Conf.Descriptors.DocRevision, String.class);
-                docn = (docn == null ? "" : docn);
-                docr = (docr == null ? "" : docr);
-
-                if(!docn.equals(transmittalNr) || !docr.equals("")) {
-                    continue;
-                }
-                if(transmittalDoc == null){
-                    transmittalDoc = xdoc;
-                    break;
-                }
-            }
-            if(transmittalDoc == null) {
-                transmittalDoc = Utils.getTransmittalOutgoingDocument(transmittalNr, helper);
-            }
-            if(transmittalDoc == null) {
-                throw new Exception("Transmittal-Document not found.");
-            }
-
+            documentIds = Utils.getLinkedDocIds(transmittalLinks);
             Utils.saveDuration(processInstance);
 
-
             String ctpn = "TRANSMITTAL_COVER";
-            String coverExcelPath = Utils.getTransmittalReprExport(transmittalDoc, ".xlsx", "Cover_Excel",
-                    exportPath , ctpn );
+            String coverExcelPath = "";
+            if(coverExcelPath.isEmpty()){
+                coverExcelPath = Utils.getTransmittalReprExport(transmittalDoc, ".xlsx", "Cover_Excel",
+                        exportPath , ctpn);
+            }
+            if(coverExcelPath.isEmpty()){
+                coverExcelPath = Utils.getTransmittalReprExport(transmittalDoc, ".xlsx", "",
+                        exportPath , ctpn);
+            }
             if(coverExcelPath.isEmpty()){
                 throw new Exception("Transmittal-Cover Excel not found.");
             }
 
-            String zipPath = Utils.getTransmittalReprExport(transmittalDoc, ".zip", "Eng_Documents",
-                    exportPath , "Blobs");
+            String zipPath = "";
+            if(zipPath.isEmpty()) {
+                zipPath = Utils.getTransmittalReprExport(transmittalDoc, ".zip", "Eng_Documents",
+                        exportPath, "Blobs");
+            }
+            if(zipPath.isEmpty()) {
+                zipPath = Utils.getTransmittalReprExport(transmittalDoc, ".zip", "",
+                        exportPath, "Blobs");
+            }
+            if(zipPath.isEmpty()) {
+                zipPath = Utils.getZipFile(session, server, transmittalLinks, exportPath, transmittalNr,
+                        documentIds, helper);
+            }
 
             String pdfPath = Utils.convertExcelToPdf(coverExcelPath, exportPath + "/" + ctpn + ".pdf");
-            Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, "");
+            //Utils.removeTransmittalRepresentations(transmittalDoc, ".xlsx");
+            Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, zipPath);
+
+            processInstance = Utils.updateProcessInstance(processInstance);
+            transmittalDoc = Utils.updateDocument(transmittalDoc);
 
             String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
             sendType = (sendType == null ? "" : sendType);
 
-            String processInstanceId = processInstance.getID();
-            Thread.sleep(2000);
-            processInstance.commit();
-            processInstance = (IProcessInstance) server.getInformationObjectByID(processInstanceId, session);
 
             bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
-                    linkedDocIds, documentIds, processInstance, transmittalDoc);
+                    linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
 
             bookmarks.put("DoxisLink", "");
             if(sendType.contains("URL")) {
@@ -187,7 +175,6 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             mail.put("BodyHTMLFile", mailHtmlPath);
-
             Utils.sendHTMLMail(session, server, mtpn, mail);
 
             System.out.println("Finished");

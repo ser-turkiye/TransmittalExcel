@@ -24,6 +24,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.util.IOUtils;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 
@@ -245,11 +247,8 @@ public class Utils {
         IDatabase db = ses.getDatabase(ac.getDefaultDatabaseID());
 
         IDocument rtrn = srv.getClassFactory().getDocumentInstance(db.getDatabaseName(), ac.getID(), "0000" , ses);
-        //rtrn.commit();
-        //srv.copyDocument2(ses, (IDocument) infObj, rtrn, CopyScope.COPY_DESCRIPTORS);
 
         rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
-        //rtrn.commit();
 
         return rtrn;
     }
@@ -294,6 +293,36 @@ public class Utils {
 
 
     }
+    static IProcessInstance
+        updateProcessInstance(IProcessInstance prin) throws Exception {
+        String prInId = prin.getID();
+        prin.commit();
+        Thread.sleep(2000);
+        if(prInId.equals("<new>")) {
+            return prin;
+        }
+        return (IProcessInstance) prin.getSession().getDocumentServer().getInformationObjectByID(prInId, prin.getSession());
+    }
+    static IDocument
+        updateDocument(IDocument docu) throws Exception {
+        String docuId = docu.getID();
+        docu.commit();
+        Thread.sleep(2000);
+        if(docuId.equals("<new>")) {
+            return docu;
+        }
+        return docu.getSession().getDocumentServer().getDocument4ID(docuId,  docu.getSession());
+    }
+    static void
+        removeTransmittalRepresentations(IDocument tdoc, String type) throws Exception {
+        IRepresentation[] reps = tdoc.getRepresentationList();
+        for(IRepresentation rrep : reps){
+            if(!rrep.getType().toUpperCase().equals(type.toUpperCase())){continue;}
+            tdoc.removeRepresentation(rrep.getRepresentationNumber());
+        }
+
+        tdoc = Utils.updateDocument(tdoc);
+    }
     static void
         addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
         String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
@@ -308,6 +337,8 @@ public class Utils {
             IDocumentPart ipdf = pdfr.addPartDocument(_pdfPath);
             tdoc.setDefaultRepresentation(tdoc.getRepresentationList().length - 1);
             frep = (tdoc.getRepresentationList().length > 0);
+
+            tdoc = Utils.updateDocument(tdoc);
         }
         String _xlsxPath = "";
         if(!xlsxPath.isEmpty()) {
@@ -317,6 +348,8 @@ public class Utils {
             IRepresentation xlsxr = tdoc.addRepresentation(".xlsx", "Cover_Excel");
             xlsxr.addPartDocument(_xlsxPath);
             frep = (tdoc.getRepresentationList().length > 0);
+
+            tdoc = Utils.updateDocument(tdoc);
         }
         String _zipPath = "";
         if(!zipPath.isEmpty()) {
@@ -326,31 +359,82 @@ public class Utils {
             IRepresentation zipr = tdoc.addRepresentation(".zip", "Eng_Documents");
             zipr.addPartDocument(_zipPath);
             frep = (tdoc.getRepresentationList().length > 0);
+
+            tdoc = Utils.updateDocument(tdoc);
         }
+    }
+    static String
+        getZipFile(ISession session, IDocumentServer server, IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
+                   List<String> documentIds, ProcessHelper helper) throws Exception {
+
+        List<String> expFilePaths = new ArrayList<>();
+        Integer lcnt = 0;
+        for (ILink link : transmittalLinks.getLinks()) {
+            IDocument edoc = (IDocument) link.getTargetInformationObject();
+            if(!edoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
+            if(!documentIds.contains(edoc.getID())){continue;}
+
+
+            String docNo = edoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
+            docNo = docNo == null ? "" : docNo;
+
+            if(docNo.isEmpty()){continue;}
+
+            String fileName = edoc.getDescriptorValue(Conf.Descriptors.FileName, String.class);
+            fileName = (fileName == null ? "" : fileName);
+            if(fileName.isEmpty()){continue;}
+
+            String expPath = Utils.exportDocument(edoc, exportPath, FilenameUtils.removeExtension(fileName));
+            if(expFilePaths.contains(expPath)){continue;}
+
+            lcnt++;
+            System.out.println("IDOC [" + lcnt + "] *** " + edoc.getID());
+            //String llfx = (lcnt <= 9 ? "0" : "") + lcnt;
+
+            expFilePaths.add(expPath);
+
+            String tcod = edoc.getDescriptorValue(Conf.Descriptors.DocTransOutCode, String.class);
+            tcod = (tcod == null ? "" : tcod);
+
+            if(tcod.isEmpty() || !tcod.equals(transmittalNr)) {
+                edoc.setDescriptorValue(Conf.Descriptors.DocTransOutCode, transmittalNr);
+                edoc = Utils.updateDocument(edoc);
+            }
+            IDocument cdoc = (IDocument) Utils.getEngineeringCRS(edoc.getID(), helper);
+            if(cdoc != null){
+                String crsNo = cdoc.getDescriptorValue(Conf.Descriptors.ObjectNumber, String.class);
+                if(!crsNo.isEmpty()){
+                    String crsPath = Utils.exportDocument(cdoc, exportPath,
+                            FilenameUtils.removeExtension(fileName) + "_" + crsNo);
+                    expFilePaths.add(crsPath);
+                }
+            }
+        }
+
+        return Utils.zipFiles(exportPath + "/Blobs.zip", "", expFilePaths);
     }
     static String
         getTransmittalReprExport(IDocument tdoc, String type, String desc, String exportPath, String fileName) throws Exception {
         String rtrn = "";
+        if(type.isEmpty()){return rtrn;}
+
         IRepresentation[] reps = tdoc.getRepresentationList();
         for(IRepresentation repr : reps){
             if(!repr.getType().equals(type)){continue;}
-            if(!repr.getDescription().equals(desc)){continue;}
+            if(!desc.isEmpty() && !repr.getDescription().equals(desc)){continue;}
             rtrn = exportRepresentation(tdoc, repr.getRepresentationNumber(), exportPath, fileName);
         }
         return rtrn;
     }
     static IProcessInstance
-        createEngineeringProjectTransmittal(IDocument doc, ProcessHelper helper) throws Exception {
+        createEngineeringProjectTransmittal(ProcessHelper helper) throws Exception {
         IProcessInstance rtrn = helper.buildNewProcessInstanceForID(Conf.ClassIDs.EngineeringProjectTransmittal);
         if (rtrn == null) throw new Exception("Engineering Project Transmittal couldn't be created");
 
-        helper.mapDescriptorsFromObjectToObject(doc, rtrn, true);
-        //rtrn.setMainInformationObjectID(doc.getID());
-        //rtrn.commit();
         return rtrn;
     }
     public static void
-        removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws IOException {
+        removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws Exception {
 
         FileInputStream tist = new FileInputStream(spth);
         XSSFWorkbook twrb = new XSSFWorkbook(tist);
@@ -381,7 +465,7 @@ public class Utils {
     }
     public static String
         saveTransmittalExcel(String templatePath, Integer shtIx, String tpltSavePath,
-                             JSONObject pbks, List<String> docLines, List<String> dstLines) throws IOException {
+                             JSONObject pbks, List<String> docLines, List<String> dstLines) throws Exception {
         String rtrn = tpltSavePath+"";
         FileInputStream tist = new FileInputStream(templatePath);
         XSSFWorkbook twrb = new XSSFWorkbook(tist);
@@ -398,14 +482,67 @@ public class Utils {
 
                 if(clvv.indexOf("[[") != (-1) && clvv.indexOf("]]") != (-1)
                 && clvv.indexOf("[[") < clvv.indexOf("]]")){
-                    String znam = clvv.substring(clvv.indexOf("[[") + "[[".length(), clvv.indexOf("]]"));
-                    if(pbks.has(znam)){
-                        tcll.setCellValue(znam);
-                        String lurl = pbks.getString(znam);
+                    String lnam = clvv.substring(clvv.indexOf("[[") + "[[".length(), clvv.indexOf("]]"));
+                    if(pbks.has(lnam)){
+                        tcll.setCellValue(lnam);
+                        String lurl = pbks.getString(lnam);
                         if(!lurl.isEmpty()) {
                             Hyperlink link = twrb.getCreationHelper().createHyperlink(HyperlinkType.URL);
                             link.setAddress(lurl);
                             tcll.setHyperlink(link);
+                        }
+                    }
+                }
+
+                if(clvv.indexOf("[*") != (-1) && clvv.indexOf("*]") != (-1)
+                && clvv.indexOf("[*") < clvv.indexOf("*]")){
+                    String inam = clvv.substring(clvv.indexOf("[*") + "[*".length(), clvv.indexOf("*]"));
+                    tcll.setCellValue("");
+                    if(pbks.has(inam)){
+                        String ipth = pbks.getString(inam);
+                        File file = new File(ipth);
+                        if(file.exists() && !file.isDirectory()) {
+                            String iext = FilenameUtils.getExtension(ipth).toUpperCase();
+                            int inpx = 0;
+                            if(iext.equals("PNG")){
+                                inpx = XSSFWorkbook.PICTURE_TYPE_PNG;
+                            }
+                            if(iext.equals("GIF")){
+                                inpx = XSSFWorkbook.PICTURE_TYPE_GIF;
+                            }
+                            if(iext.equals("JPG") || iext.equals("JPEG")){
+                                inpx = XSSFWorkbook.PICTURE_TYPE_JPEG;
+                            }
+                            if(iext.equals("TIF") || iext.equals("TIFF")){
+                                inpx = XSSFWorkbook.PICTURE_TYPE_TIFF;
+                            }
+                            if(iext.equals("BMP")){
+                                inpx = XSSFWorkbook.PICTURE_TYPE_BMP;
+                            }
+                            if(inpx > 0) {
+                                int rlen = 1;
+                                if(pbks.has(inam + ".RowLen")){
+                                    int rltm = pbks.getInt(inam + ".RowLen");
+                                    rlen = (rltm > rlen ? rltm : rlen);
+                                }
+
+                                FileInputStream inst = new FileInputStream(ipth);
+                                int pinx = twrb.addPicture(IOUtils.toByteArray(inst), inpx);
+                                inst.close();
+
+                                Drawing drwg = tsht.createDrawingPatriarch();
+                                XSSFClientAnchor ancr = twrb.getCreationHelper().createClientAnchor();
+                                ancr.setCol1(tcll.getColumnIndex());
+                                ancr.setRow1(tcll.getRowIndex());
+
+
+                                Picture pict = drwg.createPicture(ancr, pinx);
+                                float rowh = tcll.getRow().getHeightInPoints();
+                                double pich = pict.getImageDimension().getHeight();
+                                double scale = (rowh/pich)*(double)rlen;
+                                pict.resize();
+                                if(scale < 1){pict.resize(scale);}
+                            }
                         }
                     }
                 }
@@ -470,8 +607,9 @@ public class Utils {
     }
     public static JSONObject
         loadBookmarks(ISession session, IDocumentServer server, String transmittalNr, IInformationObjectLinks transmittalLinks,
-                                           List<String> linkedDocIds, List<String> documentIds,
-                                           IProcessInstance processInstance, IDocument transmittalDoc) throws Exception{
+                      List<String> linkedDocIds, List<String> documentIds,
+                      IProcessInstance processInstance, IDocument transmittalDoc,
+                      String exportPath, ProcessHelper helper) throws Exception{
         JSONObject rtrn = new JSONObject();
         JSONObject pbks = Conf.Bookmarks.projectWorkspace();
         JSONObject pbts = Conf.Bookmarks.projectWorkspaceTypes();
@@ -522,6 +660,29 @@ public class Utils {
         String cuss = Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("CC"));
         rtrn.put("CC", cuss);
 
+        if(!rtrn.getString("Approved").isEmpty()
+        && !rtrn.getString("ProjectNo").isEmpty()){
+            IUser asgUser = server.getUser(session, rtrn.getString("Approved"));
+            if(asgUser != null){
+                rtrn.put("ApprvdJobTitle", asgUser.getDescription());
+            }
+            rtrn.put("ApprvdFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Approved")));
+            IDocument asgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Approved"), helper);
+            if(asgDoc != null){
+                rtrn.put("ApprvdSignature", Utils.exportDocument(asgDoc, exportPath, rtrn.getString("Approved")));
+                rtrn.put("ApprvdSignature.RowLen", 4);
+            }
+        }
+        if(!rtrn.getString("Originated").isEmpty()
+        && !rtrn.getString("ProjectNo").isEmpty()){
+            rtrn.put("OrigndFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Originated")));
+            IDocument osgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Originated"), helper);
+            if(osgDoc != null){
+                rtrn.put("OrigndSignature", Utils.exportDocument(osgDoc, exportPath, rtrn.getString("Originated")));
+                rtrn.put("OrigndSignature.RowLen", 4);
+            }
+        }
+
         int lcnt = 0;
         for (ILink link : transmittalLinks.getLinks()) {
             IDocument edoc = (IDocument) link.getTargetInformationObject();
@@ -558,6 +719,26 @@ public class Utils {
         }
         return rtrn;
     }
+    public static List<String>
+        getLinkedDocIds(IInformationObjectLinks transmittalLinks)  {
+        List<String> rtrn = new ArrayList<>();
+        for (ILink link : transmittalLinks.getLinks()) {
+            IDocument xdoc = (IDocument) link.getTargetInformationObject();
+            if(!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
+
+            String dtyp = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
+            dtyp = (dtyp == null ? "" : dtyp);
+
+            if(dtyp.equals("Transmittal-Outgoing")) {
+                continue;
+            }
+            if(rtrn.contains(xdoc.getID())) {
+                continue;
+            }
+            rtrn.add(xdoc.getID());
+        }
+        return rtrn;
+    }
     public static String
         convertExcelToPdf(String excelPath, String pdfPath)  {
         Workbook workbook = new Workbook();
@@ -579,6 +760,8 @@ public class Utils {
     }
     public static String
         zipFiles(String zipPath, String pdfPath, List<String> expFilePaths) throws IOException {
+        if(expFilePaths.size() == 0){return "";}
+
         ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(new File(zipPath)));
         if(!pdfPath.isEmpty()) {
             //ZipEntry zltp = new ZipEntry("00." + Paths.get(tpltSavePath).getFileName().toString());
@@ -733,6 +916,21 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
+    static IDocument
+        getSignatureDocument(String prjNo, String sgnrName, ProcessHelper helper)  {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjNo).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.ObjectNumberExternal).append(" = '").append(sgnrName).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.Company} , whereClause , 1);
+        if(informationObjects.length < 1) {return null;}
+        return (IDocument) informationObjects[0];
+    }
     static IInformationObject[]
         getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
@@ -762,7 +960,7 @@ public class Utils {
         return (IDocument) informationObjects[0];
     }
     static IDocument
-    getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
+        getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")

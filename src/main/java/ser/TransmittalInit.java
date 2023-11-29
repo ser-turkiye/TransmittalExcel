@@ -75,11 +75,12 @@ public class TransmittalInit extends UnifiedAgent {
             transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
             if(transmittalNr == null || transmittalNr == "") {
                 transmittalNr = (new CounterHelper(session, processInstance.getClassID())).getCounterStr();
-                processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
-                        transmittalNr);
             }
 
-            processInstance.commit();
+            processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+                    transmittalNr);
+
+            processInstance = Utils.updateProcessInstance(processInstance);
             out.println("Tested.");
 
         } catch (Exception e) {

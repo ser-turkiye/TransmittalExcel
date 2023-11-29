@@ -72,7 +72,6 @@ public class TransmittalLoad extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
-
             Utils.saveDuration(processInstance);
 
             String ctpn = "TRANSMITTAL_COVER";
@@ -82,40 +81,10 @@ public class TransmittalLoad extends UnifiedAgent {
             }
             String tplCoverPath = Utils.exportDocument(ctpl, exportPath, ctpn);
 
-            transmittalDoc = null;
-            boolean isTDocLinked = false;
+            transmittalDoc = (IDocument) processInstance.getMainInformationObject();
+            boolean isTDocLinked = (transmittalDoc == null ? false : true);
 
-            for (ILink link : transmittalLinks.getLinks()) {
-                IDocument xdoc = (IDocument) link.getTargetInformationObject();
-                if(!xdoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-
-                String dtyp = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
-                dtyp = (dtyp == null ? "" : dtyp);
-
-                if(!dtyp.equals("Transmittal-Outgoing")) {
-                    if(!documentIds.contains(xdoc.getID())) {
-                        documentIds.add(xdoc.getID());
-                    }
-                    continue;
-                }
-
-                String docn = xdoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
-                String docr = xdoc.getDescriptorValue(Conf.Descriptors.DocRevision, String.class);
-                docn = (docn == null ? "" : docn);
-                docr = (docr == null ? "" : docr);
-
-                if(!docn.equals(transmittalNr) || !docr.equals("")) {
-                    continue;
-                }
-                if(transmittalDoc == null){
-                    transmittalDoc = xdoc;
-                    isTDocLinked = true;
-                    continue;
-                }
-                server.deleteDocument(session, xdoc);
-
-            }
-
+            documentIds = Utils.getLinkedDocIds(transmittalLinks);
 
             processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     transmittalNr);
@@ -126,62 +95,15 @@ public class TransmittalLoad extends UnifiedAgent {
             processInstance.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
 
-            String poId = processInstance.getID();
-            Thread.sleep(2000);
-            processInstance.commit();
-            processInstance = (IProcessInstance) server.getInformationObjectByID(poId, session);
+            processInstance = Utils.updateProcessInstance(processInstance);
 
-
-            Integer lcnt = 0;
-
-            List<String> expFilePaths = new ArrayList<>();
 
             if(transmittalDoc == null) {
                 transmittalDoc = Utils.createTransmittalDocument(session, server, projectInfObj);
             }
 
-            for (ILink link : transmittalLinks.getLinks()) {
-                IDocument edoc = (IDocument) link.getTargetInformationObject();
-                if(!edoc.getClassID().equals(Conf.ClassIDs.EngineeringDocument)){continue;}
-                if(linkedDocIds.contains(edoc.getID())){continue;}
-                if(!documentIds.contains(edoc.getID())){continue;}
-
-
-                String docNo = edoc.getDescriptorValue(Conf.Descriptors.DocNumber, String.class);
-                docNo = docNo == null ? "" : docNo;
-
-                String fileName = edoc.getDescriptorValue(Conf.Descriptors.FileName, String.class);
-                fileName = (fileName == null ? "" : fileName);
-                if(fileName.isEmpty()){continue;}
-
-                String expPath = Utils.exportDocument(edoc, exportPath, FilenameUtils.removeExtension(fileName));
-                if(expFilePaths.contains(expPath)){continue;}
-
-                lcnt++;
-                System.out.println("IDOC [" + lcnt + "] *** " + edoc.getID());
-                //String llfx = (lcnt <= 9 ? "0" : "") + lcnt;
-
-                if(docNo.isEmpty()){continue;}
-
-                expFilePaths.add(expPath);
-
-                edoc.setDescriptorValue(Conf.Descriptors.DocTransOutCode, transmittalNr);
-                edoc.commit();
-                linkedDocIds.add(edoc.getID());
-
-                IDocument cdoc = (IDocument) Utils.getEngineeringCRS(edoc.getID(), helper);
-                if(cdoc != null){
-                    String crsNo = cdoc.getDescriptorValue(Conf.Descriptors.ObjectNumber, String.class);
-                    if(!crsNo.isEmpty()){
-                        String crsPath = Utils.exportDocument(cdoc, exportPath,
-                                FilenameUtils.removeExtension(fileName) + "_" + crsNo);
-                        expFilePaths.add(crsPath);
-                    }
-                }
-            }
-
             bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
-                    linkedDocIds, documentIds, processInstance, transmittalDoc);
+                    linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     transmittalNr);
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ProjectNo,
@@ -205,12 +127,7 @@ public class TransmittalLoad extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.Originator,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.Prefix, String.class));
 
-            String transmittalDocId = transmittalDoc.getID();
-            transmittalDoc.commit();
-            Thread.sleep(2000);
-            if(!transmittalDocId.equals("<new>")) {
-                transmittalDoc = server.getDocument4ID(transmittalDocId, session);
-            }
+            transmittalDoc = Utils.updateDocument(transmittalDoc);
 
             ILink[] tlnks = server.getReferencedRelationships(session, transmittalDoc, true);
             JSONObject tlnkds = new JSONObject();
@@ -233,17 +150,17 @@ public class TransmittalLoad extends UnifiedAgent {
             String coverExcelPath = Utils.saveTransmittalExcel(tplCoverPath, Conf.ExcelTransmittalSheetIndex.Cover,
                     exportPath + "/" + ctpn + ".xlsx", bookmarks, docLines, dstLines);
 
-            String zipPath = Utils.zipFiles(exportPath + "/Blobs.zip", "", expFilePaths);
-            Utils.addTransmittalRepresentations(transmittalDoc, exportPath, coverExcelPath, "", zipPath);
+            Utils.addTransmittalRepresentations(transmittalDoc, exportPath, coverExcelPath, "", "");
 
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocNumber,
                     transmittalNr);
 
+            transmittalDoc = Utils.updateDocument(transmittalDoc);
+
             if(!isTDocLinked) {
-                transmittalLinks.addInformationObject(transmittalDoc.getID());
+                processInstance.setMainInformationObjectID(transmittalDoc.getID());
             }
-            processInstance.commit();
-            transmittalDoc.commit();
+            processInstance = Utils.updateProcessInstance(processInstance);
 
 
         } catch (Exception e) {
