@@ -2,6 +2,7 @@ package ser;
 
 import com.ser.blueline.IDocument;
 import com.ser.blueline.IDocumentServer;
+import com.ser.blueline.IInformationObject;
 import com.ser.blueline.ISession;
 import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
@@ -20,21 +21,32 @@ public class TransmittalTest extends UnifiedAgent {
     ISession session;
     IDocumentServer server;
     IBpmService bpm;
+    IProcessInstance processInstance;
+    IInformationObject projectInfObj;
+    ITask task;
     private ProcessHelper helper;
     @Override
     protected Object execute() {
-        if (getEventDocument() == null)
+        if (getEventTask() == null)
             return resultError("Null Document object");
 
-        session = getSes();
-        server = session.getDocumentServer();
-        IDocument document = getEventDocument();
+        if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
+            return resultRestart("Restarting Agent");
+        }
 
-        com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
+        session = getSes();
+        bpm = getBpm();
+        server = session.getDocumentServer();
+        task = getEventTask();
 
         try {
 
             //Utils.removeTransmittalRepresentations(document, "xlsx");
+
+
+            processInstance = task.getProcessInstance();
+
+            Date dval = processInstance.getDescriptorValue("DateStart", Date.class);
 
             out.println("Tested.");
 

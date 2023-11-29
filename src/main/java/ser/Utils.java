@@ -32,6 +32,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -79,8 +80,8 @@ public class Utils {
         return String.join(";", rtrn);
     }
     static void
-        sendHTMLMail(ISession ses, IDocumentServer srv, String mtpn, JSONObject pars) throws Exception {
-        JSONObject mcfg = Utils.getMailConfig(ses, srv, mtpn);
+        sendHTMLMail(ISession ses, JSONObject pars) throws Exception {
+        JSONObject mcfg = Utils.getMailConfig(ses);
 
         String host = mcfg.getString("host");
         String port = mcfg.getString("port");
@@ -159,7 +160,7 @@ public class Utils {
         Multipart multipart = new MimeMultipart("mixed");
 
         BodyPart htmlBodyPart = new MimeBodyPart();
-        htmlBodyPart.setContent(getFileContent(pars.getString("BodyHTMLFile")) , "text/html; charset=UTF-8"); //5
+        htmlBodyPart.setContent(getHTMLFileContent(pars.getString("BodyHTMLFile")) , "text/html; charset=UTF-8"); //5
         multipart.addBodyPart(htmlBodyPart);
 
         String[] atchs = attachments.split("\\;");
@@ -183,23 +184,59 @@ public class Utils {
 
     }
     static IStringMatrix
-        getMailConfigMatrix(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
-        IStringMatrix rtrn = srv.getStringMatrix("CCM_MAIL_CONFIG", ses);
+        getSystemConfigMatrix(ISession ses) throws Exception {
+        IStringMatrix rtrn = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
+        if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
+        return rtrn;
+    }
+    static IStringMatrix
+        getMailConfigMatrix(ISession ses) throws Exception {
+        IStringMatrix rtrn = ses.getDocumentServer().getStringMatrix("CCM_MAIL_CONFIG", ses);
         if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
         return rtrn;
     }
     static String
         getFileContent (String path) throws Exception {
-        return new String(Files.readAllBytes(Paths.get(path)));
+        String rtrn = new String(Files.readAllBytes(Paths.get(path)));
+        return rtrn;
+    }
+    static String
+        getHTMLFileContent (String path) throws Exception {
+        String rtrn = new String(Files.readAllBytes(Paths.get(path)));
+        rtrn = rtrn.replace("\uFEFF", "");
+        rtrn = rtrn.replace("ï»¿", "");
+        return rtrn;
     }
     static JSONObject
-        getMailConfig(ISession ses, IDocumentServer srv, String mtpn) throws Exception {
-        return getMailConfig(ses, srv, mtpn, null);
+        getSystemConfig(ISession ses) throws Exception {
+        return getSystemConfig(ses, null);
     }
     static JSONObject
-        getMailConfig(ISession ses, IDocumentServer srv, String mtpn, IStringMatrix mtrx) throws Exception {
+    getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
-            mtrx = getMailConfigMatrix(ses, srv, mtpn);
+            mtrx = getSystemConfigMatrix(ses);
+        }
+        if(mtrx == null) throw new Exception("SystemConfig Global Value List not found");
+        List<List<String>> rawTable = mtrx.getRawRows();
+
+        String srvn = ses.getSystem().getName().toUpperCase();
+        JSONObject rtrn = new JSONObject();
+        for(List<String> line : rawTable) {
+            String name = line.get(0);
+            if(!name.toUpperCase().startsWith(srvn + ".")){continue;}
+            name = name.substring(srvn.length() + ".".length());
+            rtrn.put(name, line.get(1));
+        }
+        return rtrn;
+    }
+    static JSONObject
+        getMailConfig(ISession ses) throws Exception {
+        return getMailConfig(ses, null);
+    }
+    static JSONObject
+        getMailConfig(ISession ses, IStringMatrix mtrx) throws Exception {
+        if(mtrx == null){
+            mtrx = getMailConfigMatrix(ses);
         }
         if(mtrx == null) throw new Exception("MailConfig Global Value List not found");
         List<List<String>> rawTable = mtrx.getRawRows();
@@ -248,8 +285,9 @@ public class Utils {
 
         IDocument rtrn = srv.getClassFactory().getDocumentInstance(db.getDatabaseName(), ac.getID(), "0000" , ses);
 
-        rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
-
+        if(infObj != null) {
+            rtrn.setDescriptorValue(Conf.Descriptors.MainDocumentID, ((IDocument) infObj).getID());
+        }
         return rtrn;
     }
     static void
@@ -292,6 +330,11 @@ public class Utils {
                 durh);
 
 
+    }
+    static String
+        dateToString(Date dval) throws Exception {
+        if(dval == null) return "";
+        return new SimpleDateFormat("dd/MM/YYYY").format(dval);
     }
     static IProcessInstance
         updateProcessInstance(IProcessInstance prin) throws Exception {
@@ -624,6 +667,15 @@ public class Utils {
             if(!Utils.hasDescriptor((IInformationObject) processInstance, pfld)) {continue;}
 
 
+            if(pbts.has(pkey) && pbts.get(pkey) == Date.class){
+                Date pvalDate = processInstance.getDescriptorValue(pfld, Date.class);
+                if(pvalDate != null && Utils.hasDescriptor((IInformationObject) transmittalDoc, pfld)) {
+                    transmittalDoc.setDescriptorValueTyped(pfld, pvalDate);
+                }
+                rtrn.put(pkey, (pvalDate == null ? "" : Utils.dateToString(pvalDate)));
+                continue;
+
+            }
             if(pbts.has(pkey) && pbts.get(pkey) == Integer.class){
                 Integer pvalInteger = processInstance.getDescriptorValue(pfld, Integer.class);
                 if(pvalInteger != null && Utils.hasDescriptor((IInformationObject) transmittalDoc, pfld)) {
@@ -667,6 +719,7 @@ public class Utils {
                 rtrn.put("ApprvdJobTitle", asgUser.getDescription());
             }
             rtrn.put("ApprvdFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Approved")));
+            rtrn.put("ApprvdDate", rtrn.has("ApprovedDate") ? rtrn.getString("ApprovedDate") : "");
             IDocument asgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Approved"), helper);
             if(asgDoc != null){
                 rtrn.put("ApprvdSignature", Utils.exportDocument(asgDoc, exportPath, rtrn.getString("Approved")));
@@ -675,7 +728,12 @@ public class Utils {
         }
         if(!rtrn.getString("Originated").isEmpty()
         && !rtrn.getString("ProjectNo").isEmpty()){
+            IUser asgUser = server.getUser(session, rtrn.getString("Originated"));
+            if(asgUser != null){
+                rtrn.put("OrigndJobTitle", asgUser.getDescription());
+            }
             rtrn.put("OrigndFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Originated")));
+            rtrn.put("OrigndDate", rtrn.has("OriginatedDate") ? rtrn.getString("OriginatedDate") : "");
             IDocument osgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Originated"), helper);
             if(osgDoc != null){
                 rtrn.put("OrigndSignature", Utils.exportDocument(osgDoc, exportPath, rtrn.getString("Originated")));

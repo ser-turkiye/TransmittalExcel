@@ -2,6 +2,7 @@ package ser;
 
 import org.json.JSONObject;
 
+import java.util.Date;
 import java.util.List;
 
 public class Conf {
@@ -108,10 +109,7 @@ public class Conf {
         public static final String EngineeringCRS = "3e1fe7b3-3e86-4910-8155-c29b662e71d6";
 
     }
-    public static class Licences{
-        public static final String SPIRE_XLS = "RaOICL4BAJZcQ/syuVNDcP9iQcvVrkO1p2mxEcDAH1meuQwbm6Y/MdlNOBpSKLEOvbFRv0OfDcADt4xBm+phBbvNgCo62gounm/x5hUMcaPI+srTqZzJKAcgMj5rCPwQ4IkNGeGjvRGP5m+l2kMpU+bXyhFxQdk8TcCO+nkQdqwNb+Rr469iz6RUcLvEOc2Pf3xl7/rvjFnmBv2xf1dHc5V/CH+Myf8T9sGFMHxvOHgZ9YGjwkHA+NT81cVGYooWQU6DIH/r3qx8KGHm/QUCIKKpzTGvSXqBJ2U/lsv/pnDtg1HsQioFEdLzSaIEnAfzrRzEtfPxq9djB28xJBz51mCx+0wnQpfGhzKak/K6iAgfAmU5xnYjHudHf3yLlLljTbV4pWXXPPknzb5MhEaEqYI5ZXEAvVICEpFNoHJx1Q6f+dDOZJ/pVfNGzyVmHYzwMBq78ZWUNcbCHKegP0U9Rye91KVv/Xr68DajBwnk6cyeYtJz7raPaK0Yooy8jdfqr07IVjrKS6dhRN7Sa+j+foBvoAJ4q8guGOnXFE6Qfem4YO/QeBYxEYKhkSDYpwF/I8L8Znsz7vRbjqh33+P0NWUzk+cMkp4aYsjSQwayXSeeuIS8bx1rgn+gswoPttgv2V3BbbBlNOxctAziCdjAYuzhhoE0yw3ybdOM9uH6KFZNyz/wNE0PndGABtWVACG14mJdvcnjUYKDwsPjJvj19PKd90+x1kctE19hLZVyqk+y723ZGb/J+xPjJPTBS9kbIZTbSAddfntrK2/13xmgnryIsqswgV+RpBx8KBxMUPAngyKC8j27aHj4VH+Qag8qtBvVm1k1E3b36NFJj1yvRHawgzgXP+Io0+9qoVDKpmxRdECGswCFoGeIL/MKQB9FGPR4AvFstTHqLJntr5Qdx7LeBjcPvT80DURNOZ5hUKxUaq18YpJ41Dd8UiIiHCbFHIBOJHeJe/WCW4V93ZyerHUESdcr29tz0NcN3aWwFYRcWSyiT0fPLwz1P0ypq0WezpX7k/zGZOwSRA9X4mxUUdtxHQDGoqIRupOgAuno/LkUTBAaI5EXTNPcjhwOyLa5V2OblesJ4avMXvHr06LyBmpysUBXTP9GT9k+pPK88RiCVthaVZxKK/lxKgKl+JNyE1r0WdtZzmyHKNMEqpazr2w/5/mubU4lZVfPX66cR/16fi0y0z2/DBpv6d80cY3OfXDoRiWGyBuWsHX0MlVPAO38sYPPO70voCoBwDzUleXDkYwPq8wwSuUk/R7A6y2LpGHdrlUbabhTElP1IQkRXri8CHUQmtxFNCv75eJoATk5xtZ0jomIP0PQALYgZL0Q2b3g6JfDwZyllS2ZE5JzOFCcQYLKyDBcmLdXPOYAZeCk8OlIEH84X6YbZyN13oYWPFVtgyj09Bvp50fJUt6BEOd/3e8PcDTqNsH5ppjHuKL2KkfkhHkHCEilOQ9cO0Le09rUBnzZQPdNWAR9jrnf1LqNwt198/961mzFw354ffQEaWTQdtqOLZ1a+pp3bCEkfEa/aFDY+4P3RacCb2SReQaNVh5Rmk7kufz/zRwrUZVUbOL21JzWyjk1FFPBHi/7Au2IrtwByko=";
 
-    }
     public static class Databases{
         public static final String Company = "D_QCON";
         public static final String EngineeringDocument= "PRJ_DOC";
@@ -126,6 +124,23 @@ public class Conf {
             JSONObject rtrn = new JSONObject();
             rtrn.put("DurDay", Integer.class);
             rtrn.put("DurHour", Double.class);
+
+            rtrn.put("IssueDate", Date.class);
+            rtrn.put("ApprovedDate", Date.class);
+            rtrn.put("OriginatedDate", Date.class);
+
+
+            JSONObject dbks = distribution();
+            JSONObject dbts = distributionTypes();
+
+            for (String dkey : dbks.keySet()) {
+                if(!dbts.has(dkey)){continue;}
+                for(int p=1;p<=5;p++){
+                    String dinx = (p <= 9 ? "0" : "") + p;
+                    rtrn.put(dkey + dinx, dbts.get(dkey));
+                }
+            }
+
             return rtrn;
         }
         public  static final JSONObject projectWorkspace() {
@@ -138,7 +153,7 @@ public class Conf {
             rtrn.put("CC", "CC-Receiver");
             rtrn.put("JobNo", "JobNo");
             rtrn.put("TransmittalNo", "ObjectNumberExternal");
-            rtrn.put("IssueDate", "");
+            rtrn.put("IssueDate", "DateStart");
             rtrn.put("Discipline", "");
             rtrn.put("Summary", "ccmTrmtSummary");
             rtrn.put("Notes", "ccmTrmtNotes");
@@ -146,9 +161,9 @@ public class Conf {
             rtrn.put("DurHour", "ccmPrjProcDurHour");
 
             rtrn.put("Approved", "ccmApproved");
-            rtrn.put("ApprovedDate", "");
+            rtrn.put("ApprovedDate", "ccmApprovedDate2");
             rtrn.put("Originated", "ccmOriginated");
-            rtrn.put("OriginatedDate", "");
+            rtrn.put("OriginatedDate", "ccmOriginatedDate2");
 
             JSONObject ebks = engDocument();
             for (String ekey : ebks.keySet()) {
@@ -162,7 +177,6 @@ public class Conf {
             for (String dkey : dbks.keySet()) {
                 String dfkl = dbks.getString(dkey);
                 for(int p=1;p<=5;p++){
-
                     String dinx = (p <= 9 ? "0" : "") + p;
                     rtrn.put(dkey + dinx, dfkl.replace("##", dinx));
                 }
@@ -189,8 +203,12 @@ public class Conf {
             rtrn.put("DistUser", "ccmDistUser##");
             rtrn.put("DistPurpose", "ccmDistPurpose##");
             rtrn.put("DistDlvMethod", "ccmDistDlvMethod##");
-            rtrn.put("DistDueDate", "");
-            //rtrn.put("DistDueDate", "ccmDistDueDate##");
+            rtrn.put("DistDueDate", "ccmDistDueDate##");
+            return rtrn;
+        }
+        public  static final JSONObject distributionTypes() {
+            JSONObject rtrn = new JSONObject();
+            rtrn.put("DistDueDate", Date.class);
             return rtrn;
         }
         public static final String EngDocumentMaster = "DocNo";
@@ -202,7 +220,6 @@ public class Conf {
             rtrn.put("Desc", "ObjectName");
             rtrn.put("Issue", "ccmPrjDocIssueStatus");
             rtrn.put("FileName", "ccmPrjDocFileName");
-            //rtrn.put("FileName", "@EXPORT_FILE_NAME@");
             rtrn.put("Remarks", "");
 
             return rtrn;

@@ -38,8 +38,6 @@ public class TransmittalLoad extends UnifiedAgent {
             return resultRestart("Restarting Agent");
         }
 
-        com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
-
         session = getSes();
         bpm = getBpm();
         server = session.getDocumentServer();

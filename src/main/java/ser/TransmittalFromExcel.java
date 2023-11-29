@@ -29,8 +29,6 @@ public class TransmittalFromExcel extends UnifiedAgent {
         server = session.getDocumentServer();
         IDocument document = getEventDocument();
 
-        com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
-
         try {
 
             helper = new ProcessHelper(getSes());

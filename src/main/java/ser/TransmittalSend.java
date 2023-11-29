@@ -39,14 +39,16 @@ public class TransmittalSend extends UnifiedAgent {
             return resultRestart("Restarting Agent");
         }
 
-        com.spire.license.LicenseProvider.setLicenseKey(Conf.Licences.SPIRE_XLS);
-
         session = getSes();
         bpm = getBpm();
         server = session.getDocumentServer();
         task = getEventTask();
 
         try {
+            JSONObject scfg = Utils.getSystemConfig(session);
+            if(scfg.has("LICS.SPIRE_XLS")){
+                com.spire.license.LicenseProvider.setLicenseKey(scfg.getString("LICS.SPIRE_XLS"));
+            }
 
             helper = new ProcessHelper(session);
             (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
@@ -73,9 +75,9 @@ public class TransmittalSend extends UnifiedAgent {
                 throw new Exception("Project not found [" + projectNo + "].");
             }
 
-            transmittalDoc = (IDocument) processInstance.getMainInformationObject();
-            if(transmittalDoc == null) {
-                throw new Exception("Transmittal-Document not found.");
+            IDocument tmExcelDoc = (IDocument) processInstance.getMainInformationObject();
+            if(tmExcelDoc == null) {
+                throw new Exception("Transmittal-Excel-Document not found.");
             }
 
             String mtpn = "TRANSMITTAL_MAIL";
@@ -92,16 +94,19 @@ public class TransmittalSend extends UnifiedAgent {
             String ctpn = "TRANSMITTAL_COVER";
             String coverExcelPath = "";
             if(coverExcelPath.isEmpty()){
-                coverExcelPath = Utils.getTransmittalReprExport(transmittalDoc, ".xlsx", "Cover_Excel",
+                coverExcelPath = Utils.getTransmittalReprExport(tmExcelDoc, ".xlsx", "Cover_Excel",
                         exportPath , ctpn);
             }
             if(coverExcelPath.isEmpty()){
-                coverExcelPath = Utils.getTransmittalReprExport(transmittalDoc, ".xlsx", "",
+                coverExcelPath = Utils.getTransmittalReprExport(tmExcelDoc, ".xlsx", "",
                         exportPath , ctpn);
             }
             if(coverExcelPath.isEmpty()){
                 throw new Exception("Transmittal-Cover Excel not found.");
             }
+
+            transmittalDoc = Utils.createTransmittalDocument(session, server, null);
+            transmittalDoc = server.copyDocument2(session, tmExcelDoc, transmittalDoc, CopyScope.COPY_DESCRIPTORS);
 
             String zipPath = "";
             if(zipPath.isEmpty()) {
@@ -121,8 +126,9 @@ public class TransmittalSend extends UnifiedAgent {
             //Utils.removeTransmittalRepresentations(transmittalDoc, ".xlsx");
             Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, zipPath);
 
-            processInstance = Utils.updateProcessInstance(processInstance);
             transmittalDoc = Utils.updateDocument(transmittalDoc);
+
+            processInstance = Utils.updateProcessInstance(processInstance);
 
             String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
             sendType = (sendType == null ? "" : sendType);
@@ -133,7 +139,7 @@ public class TransmittalSend extends UnifiedAgent {
 
             bookmarks.put("DoxisLink", "");
             if(sendType.contains("URL")) {
-                JSONObject mcfg = Utils.getMailConfig(session, server, mtpn);
+                JSONObject mcfg = Utils.getMailConfig(session);
                 bookmarks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(transmittalDoc.getID()));
             }
 
@@ -175,7 +181,10 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             mail.put("BodyHTMLFile", mailHtmlPath);
-            Utils.sendHTMLMail(session, server, mtpn, mail);
+            Utils.sendHTMLMail(session, mail);
+
+            processInstance.setMainInformationObjectID(transmittalDoc.getID());
+            server.deleteDocument(session, tmExcelDoc);
 
             System.out.println("Finished");
 
