@@ -45,7 +45,10 @@ public class Utils {
     static List<JSONObject>
         getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> rtrn = new ArrayList<>();
-        IStringMatrix mtrx = getWorkbasketMatrix(ses, srv);
+
+        IStringMatrix mtrx = srv.getStringMatrixByID("Workbaskets", ses);
+        if (mtrx == null) throw new Exception("Workbaskets Global Value List not found");
+
         String[] usrs = users.split("\\;");
 
         for (String usr : usrs) {
@@ -183,18 +186,6 @@ public class Utils {
         Transport.send(message);
 
     }
-    static IStringMatrix
-        getSystemConfigMatrix(ISession ses) throws Exception {
-        IStringMatrix rtrn = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
-        if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
-        return rtrn;
-    }
-    static IStringMatrix
-        getMailConfigMatrix(ISession ses) throws Exception {
-        IStringMatrix rtrn = ses.getDocumentServer().getStringMatrix("CCM_MAIL_CONFIG", ses);
-        if (rtrn == null) throw new Exception("MailConfig Global Value List not found");
-        return rtrn;
-    }
     static String
         getFileContent (String path) throws Exception {
         String rtrn = new String(Files.readAllBytes(Paths.get(path)));
@@ -212,11 +203,12 @@ public class Utils {
         return getSystemConfig(ses, null);
     }
     static JSONObject
-    getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
+            getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
-            mtrx = getSystemConfigMatrix(ses);
+            mtrx = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
         }
         if(mtrx == null) throw new Exception("SystemConfig Global Value List not found");
+
         List<List<String>> rawTable = mtrx.getRawRows();
 
         String srvn = ses.getSystem().getName().toUpperCase();
@@ -235,8 +227,8 @@ public class Utils {
     }
     static JSONObject
         getMailConfig(ISession ses, IStringMatrix mtrx) throws Exception {
-        if(mtrx == null){
-            mtrx = getMailConfigMatrix(ses);
+        if(mtrx == null) {
+            mtrx = ses.getDocumentServer().getStringMatrix("CCM_MAIL_CONFIG", ses);
         }
         if(mtrx == null) throw new Exception("MailConfig Global Value List not found");
         List<List<String>> rawTable = mtrx.getRawRows();
@@ -247,16 +239,10 @@ public class Utils {
         }
         return rtrn;
     }
-    static IStringMatrix
-        getWorkbasketMatrix(ISession ses, IDocumentServer srv) throws Exception {
-        IStringMatrix rtrn = srv.getStringMatrixByID("Workbaskets", ses);
-        if (rtrn == null) throw new Exception("Workbaskets Global Value List not found");
-        return rtrn;
-    }
     static JSONObject
         getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
-            mtrx = getWorkbasketMatrix(ses, srv);
+            mtrx = srv.getStringMatrixByID("Workbaskets", ses);
         }
         if(mtrx == null) throw new Exception("Workbaskets Global Value List not found");
         List<List<String>> rawTable = mtrx.getRawRows();
