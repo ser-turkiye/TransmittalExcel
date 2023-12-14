@@ -6,14 +6,11 @@ import java.util.Date;
 import java.util.List;
 
 public class Conf {
-    public static class ExcelTransmittalNodes {
-        public static final String FromExcelNodeName = "Generate Transmittal From Excel";
-    }
+
     public static class ExcelTransmittalPaths {
         public static final String MainPath = "C:/tmp2/bulk/transmittal";
     }
     public static class ExcelTransmittalSheetIndex {
-        public static final Integer FromExcel = 0;
         public static final Integer Cover = 0;
         public static final Integer Mail = 0;
     }
@@ -29,42 +26,6 @@ public class Conf {
         public static final List<Integer> MailDistHideCols = List.of(0);
         public static final String MailDists = "DstRows";
         public static final Integer MailDistColInx = 0;
-    }
-    public static class ExcelTransmittalDocsCellIndex {
-        public static final Integer DocNo = 1;
-        public static final Integer RevNo = 2;
-
-
-    }
-    public static class ExcelTransmittalDocsRowIndex {
-        public static final Integer Begin = 1;
-        public static final Integer End = 20;
-
-
-    }
-    public static class ExcelTransmittalDocsCellPos {
-        public static final String ProjectNo = "F1";
-        public static final String To = "F2";
-        public static final String Attention = "F3";
-        public static final String CC = "F4";
-        public static final String JobNo = "F6";
-        public static final String IssueDate = "F7";
-        public static final String TransmittalType = "F8";
-        public static final String Summary = "F10";
-        public static final String Notes = "F16";
-
-    }
-    public static class ExcelTransmittalDistCellIndex {
-        public static final Integer User = 1;
-        public static final Integer Purpose = 2;
-        public static final Integer DlvMethod = 4;
-        public static final Integer DueDate = 5;
-
-    }
-    public static class ExcelTransmittalDistRowIndex {
-        public static final Integer Begin = 24;
-        public static final Integer End = 29;
-
     }
 
     public static class Descriptors{

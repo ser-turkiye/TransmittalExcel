@@ -199,11 +199,11 @@ public class Utils {
         return rtrn;
     }
     static JSONObject
-        getSystemConfig(ISession ses) throws Exception {
+    getSystemConfig(ISession ses) throws Exception {
         return getSystemConfig(ses, null);
     }
     static JSONObject
-            getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
+    getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
         }
@@ -320,7 +320,7 @@ public class Utils {
     static String
         dateToString(Date dval) throws Exception {
         if(dval == null) return "";
-        return new SimpleDateFormat("dd/MM/YYYY").format(dval);
+        return new SimpleDateFormat("dd/MM/yyyy").format(dval);
     }
     static IProcessInstance
         updateProcessInstance(IProcessInstance prin) throws Exception {
@@ -393,7 +393,7 @@ public class Utils {
         }
     }
     static String
-        getZipFile(ISession session, IDocumentServer server, IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
+        getZipFile(IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
                    List<String> documentIds, ProcessHelper helper) throws Exception {
 
         List<String> expFilePaths = new ArrayList<>();
@@ -590,10 +590,18 @@ public class Utils {
 
         Utils.removeRows(rtrn, rtrn,
                 Conf.ExcelTransmittalSheetIndex.Mail,
+                Conf.ExcelTransmittalRowGroups.MailDocs,
+                Conf.ExcelTransmittalRowGroups.MailDocColInx,
+                Conf.ExcelTransmittalRowGroups.MailDocHideCols,
+                docLines);
+
+        Utils.removeRows(rtrn, rtrn,
+                Conf.ExcelTransmittalSheetIndex.Mail,
                 Conf.ExcelTransmittalRowGroups.MailDists,
                 Conf.ExcelTransmittalRowGroups.MailDistColInx,
                 Conf.ExcelTransmittalRowGroups.MailDistHideCols,
                 dstLines);
+
 
         return rtrn;
     }
@@ -874,20 +882,57 @@ public class Utils {
         return rtrn;
     }
     public static JSONObject
-        getDataOfTransmittal(XSSFWorkbook workbook, Integer shtIx) throws IOException {
+        getExcelConfig(XSSFWorkbook workbook) throws Exception {
         JSONObject rtrn = new JSONObject();
-        Sheet sheet = workbook.getSheetAt(shtIx);
-        rtrn.put("ProjectNo", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.ProjectNo));
-        rtrn.put("ProjectName", "");
-        rtrn.put("To", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.To));
-        rtrn.put("Attention", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.Attention));
-        rtrn.put("CC", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.CC));
-        rtrn.put("JobNo", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.JobNo));
-        rtrn.put("TransmittalNo", "");
-        rtrn.put("IssueDate", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.IssueDate));
-        rtrn.put("TransmittalType", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.TransmittalType));
-        rtrn.put("Summary", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.Summary));
-        rtrn.put("Notes", getCellValue(sheet, Conf.ExcelTransmittalDocsCellPos.Notes));
+        Sheet sheet = workbook.getSheet("#CONFIG");
+        if(sheet == null){throw new Exception("#CONFIG sheet not found.");}
+
+        for(Row row : sheet) {
+            Cell cll1 = row.getCell(0);
+            if(cll1 == null){continue;}
+
+            Cell cll3 = row.getCell(2);
+            if(cll3 == null){continue;}
+
+            if(cll1.getCellType() != CellType.STRING){continue;}
+            String cnam = cll1.getStringCellValue().trim();
+            if(cnam.isEmpty()){continue;}
+
+            String ctyp = "String";
+            Cell cll2 = row.getCell(1);
+            if(cll2 != null) {
+                CellType ttyp = cll2.getCellType();
+                if (ttyp == CellType.STRING) {
+                    ctyp = cll2.getStringCellValue().trim();
+                }
+            }
+
+            CellType tval = cll3.getCellType();
+            if(tval == CellType.STRING && ctyp.equals("String")) {
+                String cvalString = cll3.getStringCellValue().trim();
+                rtrn.put(cnam, cvalString);
+            }
+            if(tval == CellType.NUMERIC && ctyp.equals("Numeric")) {
+                Double cvalNumeric = cll3.getNumericCellValue();
+                rtrn.put(cnam, cvalNumeric);
+            }
+        }
+        return rtrn;
+    }
+    public static JSONObject
+        getDataOfTransmittal(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+        JSONObject rtrn = new JSONObject();
+        if(!ecfg.has("SheetName")){throw new Exception("#CONFIG[SheetName] not found.");}
+
+        Sheet sheet = workbook.getSheet(ecfg.getString("SheetName"));
+        String[] keys = {"ProjectNo", "ProjectName", "TransmittalNo",
+                "To", "Attention", "CC", "JobNo", "IssueDate", "TransmittalType",
+                "Summary", "Notes"};
+        for(String skey : keys){
+            rtrn.put(skey,
+                (!ecfg.has("CellPos." + skey) ? "" : getCellValue(sheet, ecfg.getString("CellPos." + skey)))
+            );
+        }
         return rtrn;
     }
     public static String
@@ -1018,34 +1063,6 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    public static List<JSONObject>
-        getListOfDocuments(XSSFWorkbook workbook)  {
-        List<JSONObject> rtrn = new ArrayList<>();
-        Sheet sheet = workbook.getSheetAt(0);
-
-        for (Row row : sheet) {
-            if(row.getRowNum() < Conf.ExcelTransmittalDocsRowIndex.Begin){continue;}
-            if(row.getRowNum() > Conf.ExcelTransmittalDocsRowIndex.End){break;}
-
-            Cell cll1 = row.getCell(Conf.ExcelTransmittalDocsCellIndex.DocNo);
-            if(cll1 == null){continue;}
-
-            Cell cll2 = row.getCell(Conf.ExcelTransmittalDocsCellIndex.RevNo);
-            if(cll2 == null){continue;}
-
-            String docNo = cll1.getRichStringCellValue().getString();
-            if(docNo.isEmpty()){continue;}
-
-            String revNo = cll2.getRichStringCellValue().getString();
-            if(revNo.isEmpty()){continue;}
-
-            JSONObject rlin = new JSONObject();
-            rlin.put("docNo", docNo);
-            rlin.put("revNo", revNo);
-            rtrn.add(rlin);
-        }
-        return rtrn;
-    }
     public static JSONObject
         getRowGroups(Sheet sheet, String prfx, Integer colIx)  {
         JSONObject rtrn = new JSONObject();
@@ -1066,35 +1083,105 @@ public class Utils {
         return rtrn;
     }
     public static List<JSONObject>
-        listOfDistributions(XSSFWorkbook workbook, Integer shtIx)  {
+        getListOfDocuments(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+        if(!ecfg.has("SheetName"))
+            {throw new Exception("#CONFIG[SheetName] not found.");}
+
+        if(!ecfg.has("Docs.Rows-Begin"))
+            {throw new Exception("#CONFIG[Docs.Rows-Begin] not found.");}
+
+        if(!ecfg.has("Docs.Rows-End"))
+            {throw new Exception("#CONFIG[Docs.Rows-End] not found.");}
+
+        Sheet sheet = workbook.getSheet(ecfg.getString("SheetName"));
         List<JSONObject> rtrn = new ArrayList<>();
-        Sheet sheet = workbook.getSheetAt(shtIx);
+
+        Integer lbgn = (int) ecfg.getDouble("Docs.Rows-Begin");
+        if(lbgn == null || lbgn<0)
+            {throw new Exception("#CONFIG[Docs.Rows-Begin] : [ " + lbgn + " ] param check");}
+        Integer lend = (int) ecfg.getDouble("Docs.Rows-End");
+        if(lend == null || lend<0)
+            {throw new Exception("#CONFIG[Docs.Rows-End] : [ " + lend + " ] param check");}
+        if(lend<=lbgn)
+            {throw new Exception("#CONFIG[Docs.Rows-End] : [ " + lend + " ]  <= #CONFIG[Docs.Rows-Begin] : [ " + lbgn + " ]");}
+
+
+        String mkey = "DocNo";
+        String[] keys = {mkey, "RevNo"};
 
         for (Row row : sheet) {
-            if(row.getRowNum() < Conf.ExcelTransmittalDistRowIndex.Begin){continue;}
-            if(row.getRowNum() > Conf.ExcelTransmittalDistRowIndex.End){break;}
-
-            Cell cll1 = row.getCell(Conf.ExcelTransmittalDistCellIndex.User);
-            if(cll1 == null){continue;}
-
-
-            String user = cll1.getRichStringCellValue().getString();
-            if(user.isEmpty()){continue;}
-
-            Cell cll2 = row.getCell(Conf.ExcelTransmittalDistCellIndex.Purpose);
-            String purpose = cll2.getRichStringCellValue().getString();
-
-            Cell cll3 = row.getCell(Conf.ExcelTransmittalDistCellIndex.DlvMethod);
-            String dlvMethod = cll3.getRichStringCellValue().getString();
-
-            Cell cll4 = row.getCell(Conf.ExcelTransmittalDistCellIndex.DueDate);
-            String dueDate = cll4.getRichStringCellValue().getString();
+            int rnum = row.getRowNum();
+            if(rnum < lbgn){continue;}
+            if(rnum > lend){break;}
 
             JSONObject rlin = new JSONObject();
-            rlin.put("user", user);
-            rlin.put("purpose", purpose.isEmpty() ? "" : purpose);
-            rlin.put("dlvMethod", dlvMethod.isEmpty() ? "" : dlvMethod);
-            rlin.put("dueDate", dueDate.isEmpty() ? "" : dueDate);
+            boolean apnd = true;
+            for(String skey : keys){
+                if(!ecfg.has("Docs.Rows-Column-" + skey) && skey == mkey){
+                    apnd = false;
+                    break;}
+
+                String cval = "";
+                if(ecfg.has("Docs.Rows-Column-" + skey)){
+                    cval = getCellValue(sheet, ecfg.getString("Docs.Rows-Column-" + skey) + (rnum+1));
+                }
+
+                rlin.put(skey, cval);
+
+            }
+            if(!apnd){continue;}
+            rtrn.add(rlin);
+        }
+        return rtrn;
+    }
+    public static List<JSONObject>
+        getListOfDistributions(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+        if(!ecfg.has("SheetName"))
+            {throw new Exception("#CONFIG[SheetName] not found.");}
+
+        if(!ecfg.has("Dists.Rows-Begin"))
+            {throw new Exception("#CONFIG[Dists.Rows-Begin] not found.");}
+
+        if(!ecfg.has("Docs.Rows-End"))
+            {throw new Exception("#CONFIG[Dists.Rows-End] not found.");}
+
+        Sheet sheet = workbook.getSheet(ecfg.getString("SheetName"));
+        List<JSONObject> rtrn = new ArrayList<>();
+
+        Integer lbgn = (int) ecfg.getDouble("Dists.Rows-Begin");
+        if(lbgn == null || lbgn<0)
+            {throw new Exception("#CONFIG[Dists.Rows-Begin] : [ " + lbgn + " ] param check");}
+        Integer lend = (int) ecfg.getDouble("Dists.Rows-End");
+        if(lend == null || lend<0)
+            {throw new Exception("#CONFIG[Dists.Rows-End] : [ " + lend + " ] param check");}
+        if(lend<=lbgn)
+            {throw new Exception("#CONFIG[Dists.Rows-End] : [ " + lend + " ]  <= #CONFIG[Dists.Rows-Begin] : [ " + lbgn + " ]");}
+
+
+        String mkey = "User";
+        String[] keys = {mkey, "Purpose", "DlvMethod", "DueDate"};
+
+        for (Row row : sheet) {
+            int rnum = row.getRowNum();
+            if(rnum < lbgn){continue;}
+            if(rnum > lend){break;}
+
+            JSONObject rlin = new JSONObject();
+            boolean apnd = true;
+            for(String skey : keys){
+                if(!ecfg.has("Dists.Rows-Column-" + skey) && skey == mkey){
+                    apnd = false;
+                    break;}
+
+                String cval = "";
+                if(ecfg.has("Dists.Rows-Column-" + skey)){
+                    cval = getCellValue(sheet, ecfg.getString("Dists.Rows-Column-" + skey) + (rnum+1));
+                }
+
+                rlin.put(skey, cval);
+
+            }
+            if(!apnd){continue;}
             rtrn.add(rlin);
         }
         return rtrn;

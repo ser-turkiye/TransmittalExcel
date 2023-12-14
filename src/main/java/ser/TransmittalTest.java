@@ -30,6 +30,7 @@ import java.io.FileOutputStream;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -46,50 +47,27 @@ public class TransmittalTest extends UnifiedAgent {
     private ProcessHelper helper;
     @Override
     protected Object execute() {
-        if (getEventTask() == null)
+        if (getEventDocument() == null)
             return resultError("Null Document object");
 
-        if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
-            return resultRestart("Restarting Agent");
-        }
-
         session = getSes();
-        bpm = getBpm();
         server = session.getDocumentServer();
-        task = getEventTask();
+        IDocument document = getEventDocument();
 
         try {
 
-            JSONObject scfg = Utils.getSystemConfig(session);
-            if(scfg.has("LICS.SPIRE_XLS")){
-                com.spire.license.LicenseProvider.setLicenseKey(scfg.getString("LICS.SPIRE_XLS"));
-            }
-
-            helper = new ProcessHelper(session);
+            helper = new ProcessHelper(getSes());
             (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
 
             String uniqueId = UUID.randomUUID().toString();
-            String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Review_Stamp[" + uniqueId + "]";
-            (new File(exportPath)).mkdir();
+            String excelPath = FileEvents.fileExport(document, Conf.ExcelTransmittalPaths.MainPath, uniqueId);
 
-            String ctpn = "REVIEW_STAMP_TEMPLATE";
-            IDocument ctpl = Utils.getTemplateDocument("PRJ_004", ctpn, helper);
-            if(ctpl == null){
-                throw new Exception("Template-Document [ " + ctpn + " ] not found.");
-            }
+            FileInputStream fist = new FileInputStream(excelPath);
+            XSSFWorkbook fwrb = new XSSFWorkbook(fist);
 
-            String templatePath = Utils.exportDocument(ctpl, exportPath, ctpn);
-
-            JSONObject bookmarks = new JSONObject();
-            bookmarks.put("code", "ACC");
-            bookmarks.put("fullname", "Test Personel");
-            bookmarks.put("date", "31.12.2023");
-
-            String xlsxPath = loadStampExcel(templatePath, exportPath + "/Stamp_Review.xlsx", bookmarks);
-            String pngPath = stampImage(xlsxPath, exportPath + "/Stamp_Review.png");
-            String resultPath = transparency(pngPath, exportPath + "/Stamp_Review_Result.png");
-            String corpPath1 = autoCrop(pngPath, exportPath + "/Stamp_Review_Crop1.png", 0);
-            String corpPath2 = autoCrop(resultPath, exportPath + "/Stamp_Review_Crop2.png", 0);
+            JSONObject ecfg = Utils.getExcelConfig(fwrb);
+            JSONObject data = Utils.getDataOfTransmittal(fwrb, ecfg);
+            List<JSONObject> dist = Utils.getListOfDistributions(fwrb, ecfg);
 
         } catch (Exception e) {
             //throw new RuntimeException(e);

@@ -40,7 +40,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
             FileInputStream fist = new FileInputStream(excelPath);
             XSSFWorkbook fwrb = new XSSFWorkbook(fist);
 
-            JSONObject data = Utils.getDataOfTransmittal(fwrb, Conf.ExcelTransmittalSheetIndex.FromExcel);
+            JSONObject ecfg = Utils.getExcelConfig(fwrb);
+
+            JSONObject data = Utils.getDataOfTransmittal(fwrb, ecfg);
             if(data.get("ProjectNo") == null || data.get("ProjectNo") == ""){
                 throw new Exception("Project no not found.");
             }
@@ -53,11 +55,11 @@ public class TransmittalFromExcel extends UnifiedAgent {
             JSONObject xbks = Conf.Bookmarks.projectWorkspace();
             processInstance = Utils.createEngineeringProjectTransmittal(helper);
 
-            List<JSONObject> dist = Utils.listOfDistributions(fwrb, Conf.ExcelTransmittalSheetIndex.FromExcel);
+            List<JSONObject> dist = Utils.getListOfDistributions(fwrb, ecfg);
             int scnt = 0;
             for (JSONObject ldst : dist) {
                 scnt++;
-                if(ldst.get("user") == null){continue;}
+                if(ldst.get("User") == null){continue;}
                 String slfx = ((scnt <= 9 ? "0" : "") + scnt);
 
                 String distUser = xbks.getString("DistUser" + slfx);
@@ -66,17 +68,17 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 String distDueDate = xbks.getString("DistDueDate" + slfx);
 
                 if(distUser.isEmpty() == false){
-                    processInstance.setDescriptorValue(distUser, ldst.getString("user"));
-                    //transmittalDoc.setDescriptorValue(distUser, ldst.getString("user"));
+                    processInstance.setDescriptorValue(distUser, ldst.getString("User"));
+                    //transmittalDoc.setDescriptorValue(distUser, ldst.getString("User"));
                 }
                 if(distPurpose.isEmpty() == false){
-                    processInstance.setDescriptorValue(distPurpose, ldst.getString("purpose"));
+                    processInstance.setDescriptorValue(distPurpose, ldst.getString("Purpose"));
                 }
                 if(distDlvMethod.isEmpty() == false){
-                    processInstance.setDescriptorValue(distDlvMethod, ldst.getString("dlvMethod"));
+                    processInstance.setDescriptorValue(distDlvMethod, ldst.getString("DlvMethod"));
                 }
                 if(distDueDate.isEmpty() == false){
-                    //processInstance.setDescriptorValue(distDueDate, ldst.getString("dueDate"));
+                    //processInstance.setDescriptorValue(distDueDate, ldst.getString("DueDate"));
                 }
             }
 
@@ -120,12 +122,17 @@ public class TransmittalFromExcel extends UnifiedAgent {
 
             IInformationObjectLinks links = processInstance.getLoadedInformationObjectLinks();
 
-            List<JSONObject> docs = Utils.getListOfDocuments(fwrb);
+            List<JSONObject> docs = Utils.getListOfDocuments(fwrb, ecfg);
             for (JSONObject ldoc : docs) {
-                if(ldoc.get("docNo") == null){continue;}
-                if(ldoc.get("revNo") == null){continue;}
+                if(!ldoc.has("DocNo")
+                || ldoc.getString("DocNo") == null
+                || ldoc.getString("DocNo").isEmpty()){continue;}
 
-                IDocument edoc = Utils.getEngineeringDocument(ldoc.getString("docNo"), ldoc.getString("revNo"), helper);
+                if(!ldoc.has("RevNo")
+                || ldoc.getString("RevNo") == null
+                || ldoc.getString("RevNo").isEmpty()){continue;}
+
+                IDocument edoc = Utils.getEngineeringDocument(ldoc.getString("DocNo"), ldoc.getString("RevNo"), helper);
                 if(edoc == null){continue;}
 
                 links.addInformationObject(edoc.getID());

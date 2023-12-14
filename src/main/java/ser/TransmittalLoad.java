@@ -80,6 +80,9 @@ public class TransmittalLoad extends UnifiedAgent {
             String tplCoverPath = Utils.exportDocument(ctpl, exportPath, ctpn);
 
             transmittalDoc = (IDocument) processInstance.getMainInformationObject();
+            if(transmittalDoc != null && !transmittalDoc.getDescriptorValue(Conf.Descriptors.Category, String.class).equals("Transmittal")){
+                transmittalDoc = null;
+            }
             boolean isTDocLinked = (transmittalDoc == null ? false : true);
 
             documentIds = Utils.getLinkedDocIds(transmittalLinks);

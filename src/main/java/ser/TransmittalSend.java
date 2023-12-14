@@ -36,7 +36,7 @@ public class TransmittalSend extends UnifiedAgent {
             return resultError("Null Document object");
 
         if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
-            return resultRestart("Restarting Agent");
+            return resultRestart("Restarting Agent - Task.ProcessInstance");
         }
 
         session = getSes();
@@ -80,6 +80,11 @@ public class TransmittalSend extends UnifiedAgent {
                 throw new Exception("Transmittal-Excel-Document not found.");
             }
 
+            if(tmExcelDoc.getCheckOutInfo().getOwnerID() != null){
+                return resultRestart("Restarting Agent - Locked TMExcel Document");
+            }
+
+
             String mtpn = "TRANSMITTAL_MAIL";
             IDocument mtpl = Utils.getTemplateDocument(projectNo, mtpn, helper);
             if(mtpl == null){
@@ -118,7 +123,7 @@ public class TransmittalSend extends UnifiedAgent {
                         exportPath, "Blobs");
             }
             if(zipPath.isEmpty()) {
-                zipPath = Utils.getZipFile(session, server, transmittalLinks, exportPath, transmittalNr,
+                zipPath = Utils.getZipFile(transmittalLinks, exportPath, transmittalNr,
                         documentIds, helper);
             }
 
