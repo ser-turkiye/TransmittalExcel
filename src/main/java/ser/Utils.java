@@ -42,8 +42,7 @@ import java.util.zip.ZipOutputStream;
 
 public class Utils {
 
-    static List<JSONObject>
-        getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
+    static List<JSONObject> getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> rtrn = new ArrayList<>();
 
         IStringMatrix mtrx = srv.getStringMatrixByID("Workbaskets", ses);
@@ -58,8 +57,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static String
-        getWorkbasketEMails(ISession ses, IDocumentServer srv, IBpmService bpm, String users) throws Exception {
+    static String getWorkbasketEMails(ISession ses, IDocumentServer srv, IBpmService bpm, String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(ses, srv, users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -72,8 +70,7 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static String
-        getWorkbasketDisplayNames(ISession ses, IDocumentServer srv, String users) throws Exception {
+    static String getWorkbasketDisplayNames(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(ses, srv, users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -82,8 +79,7 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static void
-        sendHTMLMail(ISession ses, JSONObject pars) throws Exception {
+    static void sendHTMLMail(ISession ses, JSONObject pars) throws Exception {
         JSONObject mcfg = Utils.getMailConfig(ses);
 
         String host = mcfg.getString("host");
@@ -101,6 +97,10 @@ public class Utils {
         if(pars.has("To")){
             mailTo = pars.getString("To");
         }
+
+        if(sender.isEmpty()){throw new Exception("Mail Sender is empty");}
+        if(mailTo.isEmpty()){throw new Exception("Mail To is empty");}
+
         if(pars.has("CC")){
             mailCC = pars.getString("CC");
         }
@@ -186,24 +186,20 @@ public class Utils {
         Transport.send(message);
 
     }
-    static String
-        getFileContent (String path) throws Exception {
+    static String getFileContent (String path) throws Exception {
         String rtrn = new String(Files.readAllBytes(Paths.get(path)));
         return rtrn;
     }
-    static String
-        getHTMLFileContent (String path) throws Exception {
+    static String getHTMLFileContent (String path) throws Exception {
         String rtrn = new String(Files.readAllBytes(Paths.get(path)));
         rtrn = rtrn.replace("\uFEFF", "");
         rtrn = rtrn.replace("ï»¿", "");
         return rtrn;
     }
-    static JSONObject
-    getSystemConfig(ISession ses) throws Exception {
+    static JSONObject getSystemConfig(ISession ses) throws Exception {
         return getSystemConfig(ses, null);
     }
-    static JSONObject
-    getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
+    static JSONObject getSystemConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = ses.getDocumentServer().getStringMatrix("CCM_SYSTEM_CONFIG", ses);
         }
@@ -221,12 +217,10 @@ public class Utils {
         }
         return rtrn;
     }
-    static JSONObject
-        getMailConfig(ISession ses) throws Exception {
+    static JSONObject getMailConfig(ISession ses) throws Exception {
         return getMailConfig(ses, null);
     }
-    static JSONObject
-        getMailConfig(ISession ses, IStringMatrix mtrx) throws Exception {
+    static JSONObject getMailConfig(ISession ses, IStringMatrix mtrx) throws Exception {
         if(mtrx == null) {
             mtrx = ses.getDocumentServer().getStringMatrix("CCM_MAIL_CONFIG", ses);
         }
@@ -239,8 +233,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static JSONObject
-        getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
+    static JSONObject getWorkbasket(ISession ses, IDocumentServer srv, String userID, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = srv.getStringMatrixByID("Workbaskets", ses);
         }
@@ -263,8 +256,7 @@ public class Utils {
         }
         return null;
     }
-    static IDocument
-        createTransmittalDocument(ISession ses, IDocumentServer srv, IInformationObject infObj)  {
+    static IDocument createTransmittalDocument(ISession ses, IDocumentServer srv, IInformationObject infObj)  {
 
         IArchiveClass ac = srv.getArchiveClass(Conf.ClassIDs.EngineeringDocument, ses);
         IDatabase db = ses.getDatabase(ac.getDefaultDatabaseID());
@@ -276,12 +268,10 @@ public class Utils {
         }
         return rtrn;
     }
-    static void
-        copyFile(String spth, String tpth) throws Exception {
+    static void copyFile(String spth, String tpth) throws Exception {
         FileUtils.copyFile(new File(spth), new File(tpth));
     }
-    static void
-        saveDuration(IProcessInstance processInstance) throws Exception {
+    static void saveDuration(IProcessInstance processInstance) throws Exception {
 
         Collection<ITask> tsks = processInstance.findTasks();
 
@@ -317,13 +307,11 @@ public class Utils {
 
 
     }
-    static String
-        dateToString(Date dval) throws Exception {
+    static String dateToString(Date dval) throws Exception {
         if(dval == null) return "";
         return new SimpleDateFormat("dd/MM/yyyy").format(dval);
     }
-    static IProcessInstance
-        updateProcessInstance(IProcessInstance prin) throws Exception {
+    static IProcessInstance updateProcessInstance(IProcessInstance prin) throws Exception {
         String prInId = prin.getID();
         prin.commit();
         Thread.sleep(2000);
@@ -332,8 +320,7 @@ public class Utils {
         }
         return (IProcessInstance) prin.getSession().getDocumentServer().getInformationObjectByID(prInId, prin.getSession());
     }
-    static IDocument
-        updateDocument(IDocument docu) throws Exception {
+    static IDocument updateDocument(IDocument docu) throws Exception {
         String docuId = docu.getID();
         docu.commit();
         Thread.sleep(2000);
@@ -342,8 +329,7 @@ public class Utils {
         }
         return docu.getSession().getDocumentServer().getDocument4ID(docuId,  docu.getSession());
     }
-    static void
-        removeTransmittalRepresentations(IDocument tdoc, String type) throws Exception {
+    static void removeTransmittalRepresentations(IDocument tdoc, String type) throws Exception {
         IRepresentation[] reps = tdoc.getRepresentationList();
         for(IRepresentation rrep : reps){
             if(!rrep.getType().toUpperCase().equals(type.toUpperCase())){continue;}
@@ -352,8 +338,7 @@ public class Utils {
 
         tdoc = Utils.updateDocument(tdoc);
     }
-    static void
-        addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
+    static void addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
         String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
 
         String _pdfPath = "";
@@ -392,8 +377,7 @@ public class Utils {
             tdoc = Utils.updateDocument(tdoc);
         }
     }
-    static String
-        getZipFile(IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
+    static String getZipFile(IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
                    List<String> documentIds, ProcessHelper helper) throws Exception {
 
         List<String> expFilePaths = new ArrayList<>();
@@ -442,8 +426,7 @@ public class Utils {
 
         return Utils.zipFiles(exportPath + "/Blobs.zip", "", expFilePaths);
     }
-    static String
-        getTransmittalReprExport(IDocument tdoc, String type, String desc, String exportPath, String fileName) throws Exception {
+    static String getTransmittalReprExport(IDocument tdoc, String type, String desc, String exportPath, String fileName) throws Exception {
         String rtrn = "";
         if(type.isEmpty()){return rtrn;}
 
@@ -455,15 +438,13 @@ public class Utils {
         }
         return rtrn;
     }
-    static IProcessInstance
-        createEngineeringProjectTransmittal(ProcessHelper helper) throws Exception {
+    static IProcessInstance createEngineeringProjectTransmittal(ProcessHelper helper) throws Exception {
         IProcessInstance rtrn = helper.buildNewProcessInstanceForID(Conf.ClassIDs.EngineeringProjectTransmittal);
         if (rtrn == null) throw new Exception("Engineering Project Transmittal couldn't be created");
 
         return rtrn;
     }
-    public static void
-        removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws Exception {
+    public static void removeRows(String spth, String tpth, Integer shtIx, String prfx, Integer colIx, List<Integer> hlst, List<String> tlst) throws Exception {
 
         FileInputStream tist = new FileInputStream(spth);
         XSSFWorkbook twrb = new XSSFWorkbook(tist);
@@ -492,8 +473,7 @@ public class Utils {
         tost.close();
 
     }
-    public static String
-        saveTransmittalExcel(String templatePath, Integer shtIx, String tpltSavePath,
+    public static String saveTransmittalExcel(String templatePath, Integer shtIx, String tpltSavePath,
                              JSONObject pbks, List<String> docLines, List<String> dstLines) throws Exception {
         String rtrn = tpltSavePath+"";
         FileInputStream tist = new FileInputStream(templatePath);
@@ -605,16 +585,14 @@ public class Utils {
 
         return rtrn;
     }
-    public static boolean
-        hasDescriptor(IInformationObject infObj, String dscn) throws Exception {
+    public static boolean hasDescriptor(IInformationObject infObj, String dscn) throws Exception {
         IValueDescriptor[] vds = infObj.getDescriptorList();
         for(IValueDescriptor vd : vds){
             if(vd.getName().equals(dscn)){return true;}
         }
         return false;
     }
-    public static List<String>
-        excelDstTblLines(JSONObject bookmarks) throws Exception{
+    public static List<String> excelDstTblLines(JSONObject bookmarks) throws Exception{
         List rtrn = new ArrayList<>();
 
         for(int p=1;p<=5;p++){
@@ -628,8 +606,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static List<String>
-        excelDocTblLines(JSONObject bookmarks) throws Exception{
+    public static List<String> excelDocTblLines(JSONObject bookmarks) throws Exception{
         List rtrn = new ArrayList<>();
         for(int l=1;l<=50;l++){
             String llfx = (l <= 9 ? "0" : "") + l;
@@ -642,8 +619,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static JSONObject
-        loadBookmarks(ISession session, IDocumentServer server, String transmittalNr, IInformationObjectLinks transmittalLinks,
+    public static JSONObject loadBookmarks(ISession session, IDocumentServer server, String transmittalNr, IInformationObjectLinks transmittalLinks,
                       List<String> linkedDocIds, List<String> documentIds,
                       IProcessInstance processInstance, IDocument transmittalDoc,
                       String exportPath, ProcessHelper helper) throws Exception{
@@ -771,8 +747,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static List<String>
-        getLinkedDocIds(IInformationObjectLinks transmittalLinks)  {
+    public static List<String> getLinkedDocIds(IInformationObjectLinks transmittalLinks)  {
         List<String> rtrn = new ArrayList<>();
         for (ILink link : transmittalLinks.getLinks()) {
             IDocument xdoc = (IDocument) link.getTargetInformationObject();
@@ -791,8 +766,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static String
-        convertExcelToPdf(String excelPath, String pdfPath)  {
+    public static String convertExcelToPdf(String excelPath, String pdfPath)  {
         Workbook workbook = new Workbook();
         workbook.loadFromFile(excelPath);
         workbook.getConverterSetting().setSheetFitToPage(true);
@@ -800,8 +774,7 @@ public class Utils {
 
         return pdfPath;
     }
-    public static String
-        convertExcelToHtml(String excelPath, String htmlPath)  {
+    public static String convertExcelToHtml(String excelPath, String htmlPath)  {
         Workbook workbook = new Workbook();
         workbook.loadFromFile(excelPath);
         Worksheet sheet = workbook.getWorksheets().get(0);
@@ -810,8 +783,7 @@ public class Utils {
         sheet.saveToHtml(htmlPath, options);
         return htmlPath;
     }
-    public static String
-        zipFiles(String zipPath, String pdfPath, List<String> expFilePaths) throws IOException {
+    public static String zipFiles(String zipPath, String pdfPath, List<String> expFilePaths) throws IOException {
         if(expFilePaths.size() == 0){return "";}
 
         ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(new File(zipPath)));
@@ -837,8 +809,7 @@ public class Utils {
         zout.close();
         return zipPath;
     }
-    public static String
-        exportDocument(IDocument document, String exportPath, String fileName) throws IOException {
+    public static String exportDocument(IDocument document, String exportPath, String fileName) throws IOException {
         String rtrn ="";
         IDocumentPart partDocument = document.getPartDocument(document.getDefaultRepresentation() , 0);
         String fName = (!fileName.isEmpty() ? fileName : partDocument.getFilename());
@@ -859,8 +830,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static String
-        exportRepresentation(IDocument document, int rinx, String exportPath, String fileName) throws IOException {
+    public static String exportRepresentation(IDocument document, int rinx, String exportPath, String fileName) throws IOException {
         String rtrn ="";
         IDocumentPart partDocument = document.getPartDocument(rinx , 0);
         String fName = (!fileName.isEmpty() ? fileName : partDocument.getFilename());
@@ -881,8 +851,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static JSONObject
-        getExcelConfig(XSSFWorkbook workbook) throws Exception {
+    public static JSONObject getExcelConfig(XSSFWorkbook workbook) throws Exception {
         JSONObject rtrn = new JSONObject();
         Sheet sheet = workbook.getSheet("#CONFIG");
         if(sheet == null){throw new Exception("#CONFIG sheet not found.");}
@@ -919,8 +888,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static JSONObject
-        getDataOfTransmittal(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+    public static JSONObject getDataOfTransmittal(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
         JSONObject rtrn = new JSONObject();
         if(!ecfg.has("SheetName")){throw new Exception("#CONFIG[SheetName] not found.");}
 
@@ -935,16 +903,14 @@ public class Utils {
         }
         return rtrn;
     }
-    public static String
-        getCellValue(Sheet sheet, String refn){
+    public static String getCellValue(Sheet sheet, String refn){
 
         CellReference cr = new CellReference(refn);
         Row row = sheet.getRow(cr.getRow());
         Cell rtrn = row.getCell(cr.getCol());
         return rtrn.getRichStringCellValue().getString();
     }
-    public static String
-        updateCell(String str, JSONObject bookmarks){
+    public static String updateCell(String str, JSONObject bookmarks){
         StringBuffer rtr1 = new StringBuffer();
         String tmp = str + "";
         Pattern ptr1 = Pattern.compile( "\\{([\\w\\.]+)\\}" );
@@ -962,8 +928,7 @@ public class Utils {
 
         return tmp;
     }
-    static IInformationObject
-        getProjectWorkspace(String prjn, ProcessHelper helper) {
+    static IInformationObject getProjectWorkspace(String prjn, ProcessHelper helper) {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.ProjectWorkspace).append("'")
                 .append(" AND ")
@@ -975,8 +940,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IInformationObject
-        getEngineeringCRS(String refn, ProcessHelper helper) {
+    static IInformationObject getEngineeringCRS(String refn, ProcessHelper helper) {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringCRS).append("'")
                 .append(" AND ")
@@ -990,8 +954,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IDocument
-        getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
+    static IDocument getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")
@@ -1005,8 +968,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    static IDocument
-        getSignatureDocument(String prjNo, String sgnrName, ProcessHelper helper)  {
+    static IDocument getSignatureDocument(String prjNo, String sgnrName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")
@@ -1020,8 +982,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    static IInformationObject[]
-        getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
+    static IInformationObject[] getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")
@@ -1033,8 +994,7 @@ public class Utils {
 
         return helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause, 0);
     }
-    static IDocument
-        getEngineeringDocument(String docNo, String revNo, ProcessHelper helper)  {
+    static IDocument getEngineeringDocument(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")
@@ -1048,8 +1008,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    static IDocument
-        getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
+    static IDocument getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
                 .append(" AND ")
@@ -1063,8 +1022,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    public static JSONObject
-        getRowGroups(Sheet sheet, String prfx, Integer colIx)  {
+    public static JSONObject getRowGroups(Sheet sheet, String prfx, Integer colIx)  {
         JSONObject rtrn = new JSONObject();
         for (Row row : sheet) {
             Cell cll1 = row.getCell(colIx);
@@ -1082,8 +1040,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static List<JSONObject>
-        getListOfDocuments(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+    public static List<JSONObject> getListOfDocuments(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
         if(!ecfg.has("SheetName"))
             {throw new Exception("#CONFIG[SheetName] not found.");}
 
@@ -1134,8 +1091,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static List<JSONObject>
-        getListOfDistributions(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
+    public static List<JSONObject> getListOfDistributions(XSSFWorkbook workbook, JSONObject ecfg) throws Exception {
         if(!ecfg.has("SheetName"))
             {throw new Exception("#CONFIG[SheetName] not found.");}
 

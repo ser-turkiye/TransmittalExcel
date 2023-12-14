@@ -186,7 +186,11 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             mail.put("BodyHTMLFile", mailHtmlPath);
-            Utils.sendHTMLMail(session, mail);
+            try{
+                Utils.sendHTMLMail(session, mail);
+            } catch (Exception ex){
+                System.out.println("EXCP [Send-Mail] : " + ex.getMessage());
+            }
 
             processInstance.setMainInformationObjectID(transmittalDoc.getID());
             server.deleteDocument(session, tmExcelDoc);
