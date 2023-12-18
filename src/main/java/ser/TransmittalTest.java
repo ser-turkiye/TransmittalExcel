@@ -57,7 +57,9 @@ public class TransmittalTest extends UnifiedAgent {
         try {
 
             helper = new ProcessHelper(getSes());
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
+            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
+
+            XTRObjects.setSession(session);
 
             String uniqueId = UUID.randomUUID().toString();
             String excelPath = FileEvents.fileExport(document, Conf.ExcelTransmittalPaths.MainPath, uniqueId);

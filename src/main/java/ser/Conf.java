@@ -42,11 +42,18 @@ public class Conf {
         public static final String ParentDocNumber = "ccmPrjDocParentDoc";
         public static final String ParentDocRevision = "ccmPrjDocParentDocRevision";
         public static final String ObjectNumberExternal = "ObjectNumberExternal";
+        public static final String ClientNo = "ccmPrjDocClientPrjNumber";
+        public static final String TrmtCounterPattern = "ccmTMCounterPattern";
+        public static final String TrmtCounterStart = "ccmTMCounterStart";
         public static final String TrmtSendType = "ccmTrmtSendType";
         public static final String ProjectNo = "ccmPRJCard_code";
         public static final String ProjectName = "ccmPRJCard_name";
         public static final String DccList = "ccmPrjCard_DccList";
         public static final String ObjectNumber = "ObjectNumber";
+        public static final String SenderCode = "ccmTrmtSenderCode";
+        public static final String ReceiverCode = "ccmTrmtReceiverCode";
+        public static final String SenderName = "ccmTrmtSender";
+        public static final String ReceiverName = "ccmTrmtReceiver";
 
     }
 
@@ -125,6 +132,11 @@ public class Conf {
             rtrn.put("ApprovedDate", "ccmApprovedDate2");
             rtrn.put("Originated", "ccmOriginated");
             rtrn.put("OriginatedDate", "ccmOriginatedDate2");
+
+            rtrn.put("SenderName", "ccmTrmtSender");
+            rtrn.put("SenderCode", "ccmTrmtSenderCode");
+            rtrn.put("ReceiverName", "ccmTrmtReceiver");
+            rtrn.put("ReceiverCode", "ccmTrmtReceiverCode");
 
             JSONObject ebks = engDocument();
             for (String ekey : ebks.keySet()) {

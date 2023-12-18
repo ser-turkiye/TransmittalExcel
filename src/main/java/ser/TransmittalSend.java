@@ -51,20 +51,16 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             helper = new ProcessHelper(session);
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
+            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
+
+            XTRObjects.setSession(session);
 
             String uniqueId = UUID.randomUUID().toString();
             String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Transmittal[" + uniqueId + "]";
-            (new File(exportPath)).mkdir();
-
+            (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
             transmittalLinks = processInstance.getLoadedInformationObjectLinks();
-
-            transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
-            if(transmittalNr == null || transmittalNr.isEmpty()) {
-                throw new Exception("Transmittal no is empty.");
-            }
 
             projectNo = processInstance.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
             if(projectNo.isEmpty()){
@@ -73,6 +69,10 @@ public class TransmittalSend extends UnifiedAgent {
             projectInfObj = Utils.getProjectWorkspace(projectNo, helper);
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
+            }
+            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            if(transmittalNr.isEmpty()){
+                throw new Exception("Transmittal number not found.");
             }
 
             IDocument tmExcelDoc = (IDocument) processInstance.getMainInformationObject();
@@ -186,11 +186,7 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             mail.put("BodyHTMLFile", mailHtmlPath);
-            try{
-                Utils.sendHTMLMail(session, mail);
-            } catch (Exception ex){
-                System.out.println("EXCP [Send-Mail] : " + ex.getMessage());
-            }
+            Utils.sendHTMLMail(session, mail);
 
             processInstance.setMainInformationObjectID(transmittalDoc.getID());
             server.deleteDocument(session, tmExcelDoc);

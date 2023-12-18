@@ -46,23 +46,17 @@ public class TransmittalLoad extends UnifiedAgent {
         try {
 
             helper = new ProcessHelper(session);
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
+            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
+
+            XTRObjects.setSession(session);
 
             String uniqueId = UUID.randomUUID().toString();
             String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Transmittal[" + uniqueId + "]";
-            (new File(exportPath)).mkdir();
-
+            (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
-            transmittalLinks = processInstance.getLoadedInformationObjectLinks();
-
-            transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
-
-            if(transmittalNr == null || transmittalNr == "") {
-                transmittalNr = (new CounterHelper(session, processInstance.getClassID())).getCounterStr();
-            }
-
             projectNo = processInstance.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+            projectNo = (projectNo == null ? "" : projectNo.trim());
             if(projectNo.isEmpty()){
                 throw new Exception("Project no is empty.");
             }
@@ -70,6 +64,12 @@ public class TransmittalLoad extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
+            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            if(transmittalNr.isEmpty()){
+                throw new Exception("Transmittal number not found.");
+            }
+
+            transmittalLinks = processInstance.getLoadedInformationObjectLinks();
             Utils.saveDuration(processInstance);
 
             String ctpn = "TRANSMITTAL_COVER";
@@ -87,8 +87,6 @@ public class TransmittalLoad extends UnifiedAgent {
 
             documentIds = Utils.getLinkedDocIds(transmittalLinks);
 
-            processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
-                    transmittalNr);
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectName,

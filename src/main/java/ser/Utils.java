@@ -41,7 +41,68 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Utils {
+    static String getTransmittalNr(ISession ses, IInformationObject projectInfObj, IProcessInstance processInstance) throws Exception {
+        String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
+        rtrn = (rtrn == null ? "" : rtrn.trim());
+        if(rtrn.isEmpty()) {
 
+            String clientNo = "";
+            if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ClientNo)){
+                clientNo = projectInfObj.getDescriptorValue(Conf.Descriptors.ClientNo, String.class);
+                clientNo = (clientNo == null ? "" : clientNo);
+            }
+            String projectNo = "";
+            if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ProjectNo)){
+                projectNo = projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+                projectNo = (projectNo == null ? "" : projectNo);
+            }
+            String cntPattern = "";
+            if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.TrmtCounterPattern)){
+                cntPattern = projectInfObj.getDescriptorValue(Conf.Descriptors.TrmtCounterPattern, String.class);
+                cntPattern = (cntPattern == null ? "" : cntPattern);
+            }
+            Integer cntStart = 0;
+            if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.TrmtCounterStart)){
+                cntStart = projectInfObj.getDescriptorValue(Conf.Descriptors.TrmtCounterStart, Integer.class);
+                cntStart = (cntStart == null || cntStart < 0 ? 0 : cntStart);
+            }
+            String senderCode = "";
+            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.SenderCode)){
+                senderCode = processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class);
+                senderCode = (senderCode == null ? "" : senderCode);
+            }
+            String receiverCode = "";
+            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.ReceiverCode)){
+                receiverCode = processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class);
+                receiverCode = (receiverCode == null ? "" : receiverCode);
+            }
+
+            if(!clientNo.isEmpty() && !projectNo.isEmpty() && !cntPattern.isEmpty()
+            && !senderCode.isEmpty() && !receiverCode.isEmpty()){
+                String counterName = AutoText.init().with(projectInfObj)
+                        .param("ClientNo", clientNo)
+                        .param("ProjectNo", projectNo)
+                        .param("Sender", senderCode)
+                        .param("Receiver", receiverCode)
+                        .run("{ProjectNo}.{ClientNo}.{Sender}.{Receiver}");
+
+                NumberRange nr = new NumberRange();
+                nr.parameter("ClientNo", clientNo);
+                nr.parameter("ProjectNo", projectNo);
+                nr.parameter("Sender", senderCode);
+                nr.parameter("Receiver", receiverCode);
+                if(!nr.has(counterName)){
+                    nr.append(counterName, cntPattern, Long.parseLong(cntStart.toString()));
+                }
+
+                rtrn = nr.increment(counterName);
+            }
+            //rtrn = (new CounterHelper(ses, processInstance.getClassID())).getCounterStr();
+            processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+                    rtrn);
+        }
+        return rtrn;
+    }
     static List<JSONObject> getWorkbaskets(ISession ses, IDocumentServer srv, String users) throws Exception {
         List<JSONObject> rtrn = new ArrayList<>();
 
@@ -97,10 +158,6 @@ public class Utils {
         if(pars.has("To")){
             mailTo = pars.getString("To");
         }
-
-        if(sender.isEmpty()){throw new Exception("Mail Sender is empty");}
-        if(mailTo.isEmpty()){throw new Exception("Mail To is empty");}
-
         if(pars.has("CC")){
             mailCC = pars.getString("CC");
         }
@@ -895,6 +952,7 @@ public class Utils {
         Sheet sheet = workbook.getSheet(ecfg.getString("SheetName"));
         String[] keys = {"ProjectNo", "ProjectName", "TransmittalNo",
                 "To", "Attention", "CC", "JobNo", "IssueDate", "TransmittalType",
+                "SenderCode", "SenderName", "ReceiverCode", "ReceiverName",
                 "Summary", "Notes"};
         for(String skey : keys){
             rtrn.put(skey,

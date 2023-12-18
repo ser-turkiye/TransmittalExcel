@@ -22,7 +22,7 @@ class TEST_TransmittalFromExcel {
     void testForAgentResult() {
         def agent = new TransmittalFromExcel();
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD06D_QCON24ad1e37e9-a53e-461f-8ba7-8929cfee863e182023-12-04T15:33:52.876Z011"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD06D_QCON24c6b44b84-aeb3-4e85-9798-5c6e1998b4d0182023-12-15T17:38:33.553Z011"
 
         def result = (AgentExecutionResult)agent.execute(binding.variables)
         assert result.resultCode == 0

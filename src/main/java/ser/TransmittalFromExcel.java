@@ -32,7 +32,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
         try {
 
             helper = new ProcessHelper(getSes());
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdir();
+            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
+
+            XTRObjects.setSession(session);
 
             String uniqueId = UUID.randomUUID().toString();
             String excelPath = FileEvents.fileExport(document, Conf.ExcelTransmittalPaths.MainPath, uniqueId);
@@ -46,8 +48,7 @@ public class TransmittalFromExcel extends UnifiedAgent {
             if(data.get("ProjectNo") == null || data.get("ProjectNo") == ""){
                 throw new Exception("Project no not found.");
             }
-
-            IInformationObject projectInfObj = Utils.getProjectWorkspace(data.get("ProjectNo").toString(), helper);
+            projectInfObj = Utils.getProjectWorkspace(data.get("ProjectNo").toString(), helper);
             if(projectInfObj == null){
                 throw new Exception("Project not found.");
             }
@@ -94,13 +95,11 @@ public class TransmittalFromExcel extends UnifiedAgent {
 
                 processInstance.setDescriptorValue(pfld, dval);
             }
-            transmittalNr = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
-            if(transmittalNr == null || transmittalNr == "") {
-                transmittalNr = (new CounterHelper(session, processInstance.getClassID())).getCounterStr();
-            }
 
-            processInstance.setDescriptorValue("ObjectNumberExternal",
-                    transmittalNr);
+            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            if(transmittalNr.isEmpty()){
+                throw new Exception("Transmittal number not found.");
+            }
 
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
