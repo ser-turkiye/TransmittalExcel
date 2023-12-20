@@ -4,6 +4,7 @@ import com.ser.blueline.*;
 import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
+import com.ser.blueline.lock.ILockInfo;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
@@ -60,9 +61,7 @@ public class TransmittalSend extends UnifiedAgent {
             (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
-            transmittalLinks = processInstance.getLoadedInformationObjectLinks();
-
-            projectNo = processInstance.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+            projectNo = (processInstance != null ? Utils.projectNr((IInformationObject) processInstance) : "");
             if(projectNo.isEmpty()){
                 throw new Exception("Project no is empty.");
             }
@@ -70,17 +69,20 @@ public class TransmittalSend extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
+
             transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");
             }
 
+            transmittalLinks = processInstance.getLoadedInformationObjectLinks();
             IDocument tmExcelDoc = (IDocument) processInstance.getMainInformationObject();
             if(tmExcelDoc == null) {
                 throw new Exception("Transmittal-Excel-Document not found.");
             }
 
-            if(tmExcelDoc.getCheckOutInfo().getOwnerID() != null){
+            ILockInfo cout = tmExcelDoc.getCheckOutInfo();
+            if(cout != null && cout.getOwnerID() != null){
                 return resultRestart("Restarting Agent - Locked TMExcel Document");
             }
 

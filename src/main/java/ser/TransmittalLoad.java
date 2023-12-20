@@ -55,8 +55,7 @@ public class TransmittalLoad extends UnifiedAgent {
             (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
-            projectNo = processInstance.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
-            projectNo = (projectNo == null ? "" : projectNo.trim());
+            projectNo = (processInstance != null ? Utils.projectNr((IInformationObject) processInstance) : "");
             if(projectNo.isEmpty()){
                 throw new Exception("Project no is empty.");
             }
@@ -64,6 +63,7 @@ public class TransmittalLoad extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
+
             transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");

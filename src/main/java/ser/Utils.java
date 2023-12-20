@@ -49,17 +49,13 @@ public class Utils {
             String clientNo = "";
             if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ClientNo)){
                 clientNo = projectInfObj.getDescriptorValue(Conf.Descriptors.ClientNo, String.class);
-                clientNo = (clientNo == null ? "" : clientNo);
+                clientNo = (clientNo == null ? "" : clientNo).trim();
             }
-            String projectNo = "";
-            if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ProjectNo)){
-                projectNo = projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
-                projectNo = (projectNo == null ? "" : projectNo);
-            }
+            String projectNo = projectNr(projectInfObj);
             String cntPattern = "";
             if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.TrmtCounterPattern)){
                 cntPattern = projectInfObj.getDescriptorValue(Conf.Descriptors.TrmtCounterPattern, String.class);
-                cntPattern = (cntPattern == null ? "" : cntPattern);
+                cntPattern = (cntPattern == null ? "" : cntPattern).trim();
             }
             Integer cntStart = 0;
             if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.TrmtCounterStart)){
@@ -69,12 +65,12 @@ public class Utils {
             String senderCode = "";
             if(Utils.hasDescriptor(processInstance, Conf.Descriptors.SenderCode)){
                 senderCode = processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class);
-                senderCode = (senderCode == null ? "" : senderCode);
+                senderCode = (senderCode == null ? "" : senderCode).trim();
             }
             String receiverCode = "";
             if(Utils.hasDescriptor(processInstance, Conf.Descriptors.ReceiverCode)){
                 receiverCode = processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class);
-                receiverCode = (receiverCode == null ? "" : receiverCode);
+                receiverCode = (receiverCode == null ? "" : receiverCode).trim();
             }
 
             if(!clientNo.isEmpty() && !projectNo.isEmpty() && !cntPattern.isEmpty()
@@ -87,19 +83,27 @@ public class Utils {
                         .run("{ProjectNo}.{ClientNo}.{Sender}.{Receiver}");
 
                 NumberRange nr = new NumberRange();
-                nr.parameter("ClientNo", clientNo);
-                nr.parameter("ProjectNo", projectNo);
-                nr.parameter("Sender", senderCode);
-                nr.parameter("Receiver", receiverCode);
                 if(!nr.has(counterName)){
                     nr.append(counterName, cntPattern, Long.parseLong(cntStart.toString()));
                 }
 
+                nr.parameter("ClientNo", clientNo);
+                nr.parameter("ProjectNo", projectNo);
+                nr.parameter("Sender", senderCode);
+                nr.parameter("Receiver", receiverCode);
                 rtrn = nr.increment(counterName);
             }
             //rtrn = (new CounterHelper(ses, processInstance.getClassID())).getCounterStr();
             processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     rtrn);
+        }
+        return rtrn;
+    }
+    static String projectNr(IInformationObject projectInfObj) throws Exception {
+        String rtrn = "";
+        if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ProjectNo)){
+            rtrn = projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
+            rtrn = (rtrn == null ? "" : rtrn).trim();
         }
         return rtrn;
     }

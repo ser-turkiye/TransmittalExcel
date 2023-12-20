@@ -47,10 +47,11 @@ public class TransmittalInit extends UnifiedAgent {
             XTRObjects.setSession(session);
 
             processInstance = task.getProcessInstance();
-            projectNo = (projectNo == null ? "" : projectNo.trim());
+            projectNo = (processInstance != null ? Utils.projectNr((IInformationObject) processInstance) : "");
             if(projectNo.isEmpty()){
                 throw new Exception("Project no is empty.");
             }
+
             projectInfObj = Utils.getProjectWorkspace(projectNo, helper);
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");

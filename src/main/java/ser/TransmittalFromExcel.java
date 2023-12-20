@@ -96,18 +96,19 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 processInstance.setDescriptorValue(pfld, dval);
             }
 
-            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
-            if(transmittalNr.isEmpty()){
-                throw new Exception("Transmittal number not found.");
-            }
-
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectName,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
+
+            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+
+            if(transmittalNr.isEmpty()){
+                throw new Exception("Transmittal number not found.");
+            }
+
             processInstance.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
-
             processInstance.setDescriptorValue("To-Receiver",
                     Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("To-Receiver", String.class)));
             processInstance.setDescriptorValue("ObjectAuthors",
