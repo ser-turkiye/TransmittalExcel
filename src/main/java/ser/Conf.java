@@ -37,7 +37,7 @@ public class Conf {
         public static final String DocType = "ccmPrjDocDocType";
         public static final String ObjectName = "ObjectName";
         public static final String Originator = "ccmPrjDocOiginator";
-        public static final String Prefix = "ccmPRJCard_prefix";
+        public static final String Prefix = "ccmTrmtSenderCode";
         public static final String Category = "ccmPrjDocCategory";
         public static final String ParentDocNumber = "ccmPrjDocParentDoc";
         public static final String ParentDocRevision = "ccmPrjDocParentDocRevision";
