@@ -103,6 +103,7 @@ public class TransmittalLoad extends UnifiedAgent {
 
             bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
                     linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
+
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
                     transmittalNr);
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ProjectNo,
@@ -111,6 +112,11 @@ public class TransmittalLoad extends UnifiedAgent {
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocSenderCode,
+                    projectInfObj.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
+                    projectInfObj.getDescriptorValue(Conf.Descriptors.DocReceiverCode, String.class));
+
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocNumber,
                     transmittalNr);
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocRevision,

@@ -52,8 +52,8 @@ public class Conf {
         public static final String ObjectNumber = "ObjectNumber";
         public static final String SenderCode = "ccmTrmtSenderCode";
         public static final String ReceiverCode = "ccmTrmtReceiverCode";
-        public static final String SenderName = "ccmTrmtSender";
-        public static final String ReceiverName = "ccmTrmtReceiver";
+        public static final String DocSenderCode = "ccmSenderCode";
+        public static final String DocReceiverCode = "ccmReceiverCode";
 
     }
 
