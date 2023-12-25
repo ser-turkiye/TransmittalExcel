@@ -133,8 +133,15 @@ public class TransmittalSend extends UnifiedAgent {
             //Utils.removeTransmittalRepresentations(transmittalDoc, ".xlsx");
             Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, zipPath);
 
-            transmittalDoc = Utils.updateDocument(transmittalDoc);
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocOiginator,
+                    processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocSenderCode,
+                    processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
+                    processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,"50");
 
+            transmittalDoc = Utils.updateDocument(transmittalDoc);
             processInstance = Utils.updateProcessInstance(processInstance);
 
             String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);

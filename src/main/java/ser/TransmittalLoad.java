@@ -112,10 +112,15 @@ public class TransmittalLoad extends UnifiedAgent {
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
+
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocOiginator,
+                    processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocSenderCode,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
+                    processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.DocReceiverCode, String.class));
+                    processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,
+                    "50");
 
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocNumber,
                     transmittalNr);

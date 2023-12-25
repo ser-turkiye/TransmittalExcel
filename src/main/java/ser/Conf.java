@@ -54,6 +54,8 @@ public class Conf {
         public static final String ReceiverCode = "ccmTrmtReceiverCode";
         public static final String DocSenderCode = "ccmSenderCode";
         public static final String DocReceiverCode = "ccmReceiverCode";
+        public static final String DocStatus = "ccmPrjDocStatus";
+        public static final String DocOiginator = "ccmPrjDocOiginator";
 
     }
 
