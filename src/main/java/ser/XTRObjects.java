@@ -35,19 +35,16 @@ public class XTRObjects {
     static String principalName;
     static String exportPath;
 
-    public static void
-    setSession(ISession ses) throws Exception {
+    public static void setSession(ISession ses) throws Exception {
         XTRObjects.session = ses;
         XTRObjects.server = XTRObjects.session.getDocumentServer();
         XTRObjects.principalName = XTRObjects.server.getServicePrincipalName();
     }
-    public static void
-    setExportPath(String exportPath) throws Exception {
+    public static void setExportPath(String exportPath) throws Exception {
         XTRObjects.exportPath = (exportPath + "/" + XTRObjects.uniqueId).replace("//", "/");
             (new File(XTRObjects.exportPath)).mkdirs();
     }
-    public static IDatabase
-    getDatabase(String dbn) throws Exception {
+    public static IDatabase getDatabase(String dbn) throws Exception {
         return XTRObjects.getDatabase((db) -> {
             if(db.getName().equals(dbn)){
                 return db;
@@ -55,8 +52,7 @@ public class XTRObjects {
             return null;
         });
     }
-    public static IDatabase
-    getDatabase(Function <IDatabase, IDatabase> func) throws Exception {
+    public static IDatabase getDatabase(Function <IDatabase, IDatabase> func) throws Exception {
         IDatabase[] dbs = session.getDatabases();
         int c = 0;
         for(IDatabase db : dbs){
@@ -65,56 +61,44 @@ public class XTRObjects {
         }
         return null;
     }
-    public static IDescriptor
-    getDescriptor(String dn) throws Exception {
+    public static IDescriptor getDescriptor(String dn) throws Exception {
         return server.getDescriptorForName(session, dn);
     }
-    public static void
-    callDatabases(Function <IDatabase, Boolean> func) throws Exception {
+    public static void callDatabases(Function <IDatabase, Boolean> func) throws Exception {
         IDatabase[] dbs = session.getDatabases();
         int c = 0;
         for(IDatabase db : dbs){
             if(!func.apply(db)){break;}
         }
     }
-    public static ISession
-    getSession(){
+    public static ISession getSession(){
         return XTRObjects.session;
     }
-    public static IDocumentServer
-    getServer(){
+    public static IDocumentServer getServer(){
         return XTRObjects.server;
     }
-    public static String
-    getPrincipalName(){
+    public static String getPrincipalName(){
         return XTRObjects.principalName;
     }
-    public static String
-    getExportPath(){
+    public static String getExportPath(){
         return XTRObjects.exportPath;
     }
-    public static NumberRange
-    numberRange() throws Exception{
+    public static NumberRange numberRange() throws Exception{
         return NumberRange.init();
     }
-    public static NumberRange
-    numberRange(Object obj) throws Exception{
+    public static NumberRange numberRange(Object obj) throws Exception{
         return XTRObjects.numberRange().with(obj);
     }
-    public static InfoObject
-    infoObject(Object obj) throws Exception{
+    public static InfoObject infoObject(Object obj) throws Exception{
         return InfoObject.init(obj);
     }
-    public static AutoText
-    autoText() throws Exception{
+    public static AutoText autoText() throws Exception{
         return AutoText.init();
     }
-    public static AutoText
-    autoText(Object obj) throws Exception{
+    public static AutoText autoText(Object obj) throws Exception{
         return XTRObjects.autoText().with(obj);
     }
-    public static String
-    autoText(Object obj, String atxt) throws Exception{
+    public static String autoText(Object obj, String atxt) throws Exception{
         return XTRObjects.autoText().with(obj).run(atxt);
     }
 

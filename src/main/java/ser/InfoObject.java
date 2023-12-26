@@ -16,12 +16,10 @@ public class InfoObject {
     public InfoObject(Object object) {
         infObj = object;
     }
-    public static InfoObject
-    init(Object object) {
+    public static InfoObject init(Object object) {
         return new InfoObject(object);
     }
-    public boolean
-    hasDescriptor(String descName){
+    public boolean hasDescriptor(String descName){
         if(infObj == null){return false;}
         if(isInformationObject() || isProcessInstance() || isTask() || isDocument()){
             IInformationObject info = (IInformationObject) infObj;
@@ -33,8 +31,7 @@ public class InfoObject {
         }
         return false;
     }
-    public boolean
-    isLocked() {
+    public boolean isLocked() {
         if(isDocument()) {
             if (((IDocument) infObj).getCheckOutInfo().getOwnerID() != null) {
                return true;
@@ -52,53 +49,45 @@ public class InfoObject {
         }
         return false;
     }
-    public boolean
-    isDocument(){
+    public boolean isDocument(){
         List<String> dxcs =  new ArrayList<>(Arrays.asList(
                 XTRObjects.classNameIDocument
         ));
         return dxcs.contains(infObj.getClass().getName());
     }
-    public boolean
-    isProcessInstance(){
+    public boolean isProcessInstance(){
         List<String> dxcs =  new ArrayList<>(Arrays.asList(
                 XTRObjects.classNameIProcessInstance
         ));
         return dxcs.contains(infObj.getClass().getName());
     }
-    public boolean
-    isTask() {
+    public boolean isTask() {
         List<String> dxcs =  new ArrayList<>(Arrays.asList(
                 XTRObjects.classNameITask
         ));
         return dxcs.contains(infObj.getClass().getName());
     }
-    public boolean
-    isInformationObject(){
+    public boolean isInformationObject(){
         List<String> dxcs =  new ArrayList<>(Arrays.asList(
                 XTRObjects.classNameIInformationObject
         ));
         return dxcs.contains(infObj.getClass().getName());
     }
-    public String
-    exportDocument(String fileName) throws Exception {
+    public String exportDocument(String fileName) throws Exception {
         if(!isDocument()){throw new Exception("Export-Document only for IDocument object.");}
         IDocument doc = (IDocument) infObj;
         return exportRepresentation(doc.getDefaultRepresentation(), XTRObjects.getExportPath(), fileName);
     }
-    public String
-    exportDocument(String exportPath, String fileName) throws Exception {
+    public String exportDocument(String exportPath, String fileName) throws Exception {
         if(!isDocument()){throw new Exception("Export-Document only for IDocument object.");}
         IDocument doc = (IDocument) infObj;
         return exportRepresentation(doc.getDefaultRepresentation(), exportPath, fileName);
     }
-    public String
-    exportRepresentation(int rinx, String fileName) throws Exception {
+    public String exportRepresentation(int rinx, String fileName) throws Exception {
         if(!isDocument()){throw new Exception("Export-Representation only for IDocument object.");}
         return exportRepresentation(rinx, XTRObjects.getExportPath(), fileName);
     }
-    public String
-    exportRepresentation(int rinx, String exportPath, String fileName) throws Exception {
+    public String exportRepresentation(int rinx, String exportPath, String fileName) throws Exception {
         if(!isDocument()){throw new Exception("Export-Representation only for IDocument object.");}
         String rtrn = "";
         IDocument doc = (IDocument) infObj;
@@ -129,8 +118,7 @@ public class InfoObject {
         }
         return rtrn;
     }
-    public String
-    autoText(String atxt) throws Exception {
+    public String autoText(String atxt) throws Exception {
         return XTRObjects.autoText(infObj).run(atxt);
     }
 }

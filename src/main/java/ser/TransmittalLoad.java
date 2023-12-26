@@ -128,8 +128,10 @@ public class TransmittalLoad extends UnifiedAgent {
                     "");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocType,
                     "Transmittal-Outgoing");
+
+            String fileName = transmittalNr.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf";
             transmittalDoc.setDescriptorValue(Conf.Descriptors.FileName,
-                    "" + transmittalNr + ".pdf");
+                    fileName);
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectName,
                     "Transmittal Cover Page");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.Category,
