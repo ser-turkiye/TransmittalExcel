@@ -138,8 +138,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
                 links.addInformationObject(edoc.getID());
             }
 
-            processInstance = Utils.updateProcessInstance(processInstance);
+            //processInstance = Utils.updateProcessInstance(processInstance);
 
+            processInstance.commit();
             ILink lnk1 = server.createLink(session, processInstance.getID(), null, document.getID());
             lnk1.commit();
 

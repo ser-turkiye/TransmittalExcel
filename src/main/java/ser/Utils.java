@@ -7,6 +7,10 @@ import com.ser.blueline.bpm.ITask;
 import com.ser.blueline.bpm.IWorkbasket;
 import com.ser.blueline.metaDataComponents.IArchiveClass;
 import com.ser.blueline.metaDataComponents.IStringMatrix;
+import com.ser.foldermanager.IElement;
+import com.ser.foldermanager.IElements;
+import com.ser.foldermanager.IFolder;
+import com.ser.foldermanager.INode;
 import com.spire.xls.FileFormat;
 import com.spire.xls.Workbook;
 import com.spire.xls.Worksheet;
@@ -41,8 +45,22 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Utils {
+    public static IInformationObject getContractorFolder(String prjCode, String compCode, ProcessHelper helper)  {
+        StringBuilder builder = new StringBuilder();
+        builder.append("TYPE = '").append(Conf.ClassIDs.InvolveParty).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjCode).append("'")
+                .append(" AND ")
+                .append(Conf.DescriptorLiterals.ShortName).append(" = '").append(compCode).append("'");
+        String whereClause = builder.toString();
+        System.out.println("Where Clause: " + whereClause);
+
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , 1);
+        if(informationObjects.length < 1) {return null;}
+        return informationObjects[0];
+    }
     static String getTransmittalNr(ISession ses, IInformationObject projectInfObj, IProcessInstance processInstance) throws Exception {
-        String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
+        String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.TransmittalNr, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
         if(rtrn.isEmpty()) {
 
@@ -94,7 +112,7 @@ public class Utils {
                 rtrn = nr.increment(counterName);
             }
             //rtrn = (new CounterHelper(ses, processInstance.getClassID())).getCounterStr();
-            processInstance.setDescriptorValue(Conf.Descriptors.ObjectNumberExternal,
+            processInstance.setDescriptorValue(Conf.Descriptors.TransmittalNr,
                     rtrn);
         }
         return rtrn;
@@ -384,23 +402,14 @@ public class Utils {
     static IDocument updateDocument(IDocument docu) throws Exception {
         String docuId = docu.getID();
         docu.commit();
-        Thread.sleep(2000);
+        Thread.sleep(3000);
         if(docuId.equals("<new>")) {
             return docu;
         }
         return docu.getSession().getDocumentServer().getDocument4ID(docuId,  docu.getSession());
     }
-    static void removeTransmittalRepresentations(IDocument tdoc, String type) throws Exception {
-        IRepresentation[] reps = tdoc.getRepresentationList();
-        for(IRepresentation rrep : reps){
-            if(!rrep.getType().toUpperCase().equals(type.toUpperCase())){continue;}
-            tdoc.removeRepresentation(rrep.getRepresentationNumber());
-        }
-
-        tdoc = Utils.updateDocument(tdoc);
-    }
     static void addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
-        String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.ObjectNumberExternal, String.class);
+        String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.TransmittalNr, String.class);
 
         String _pdfPath = "";
         boolean frep = (tdoc.getRepresentationList().length > 0);
@@ -413,7 +422,7 @@ public class Utils {
             tdoc.setDefaultRepresentation(tdoc.getRepresentationList().length - 1);
             frep = (tdoc.getRepresentationList().length > 0);
 
-            tdoc = Utils.updateDocument(tdoc);
+            //tdoc = Utils.updateDocument(tdoc);
         }
         String _xlsxPath = "";
         if(!xlsxPath.isEmpty()) {
@@ -424,7 +433,9 @@ public class Utils {
             xlsxr.addPartDocument(_xlsxPath);
             frep = (tdoc.getRepresentationList().length > 0);
 
-            tdoc = Utils.updateDocument(tdoc);
+
+
+            //tdoc = Utils.updateDocument(tdoc);
         }
         String _zipPath = "";
         if(!zipPath.isEmpty()) {
@@ -435,7 +446,7 @@ public class Utils {
             zipr.addPartDocument(_zipPath);
             frep = (tdoc.getRepresentationList().length > 0);
 
-            tdoc = Utils.updateDocument(tdoc);
+            //tdoc = Utils.updateDocument(tdoc);
         }
     }
     static String getZipFile(IInformationObjectLinks transmittalLinks, String exportPath, String transmittalNr,
@@ -472,7 +483,8 @@ public class Utils {
 
             if(tcod.isEmpty() || !tcod.equals(transmittalNr)) {
                 edoc.setDescriptorValue(Conf.Descriptors.DocTransOutCode, transmittalNr);
-                edoc = Utils.updateDocument(edoc);
+                //edoc = Utils.updateDocument(edoc);
+                edoc.commit();
             }
             IDocument cdoc = (IDocument) Utils.getEngineeringCRS(edoc.getID(), helper);
             if(cdoc != null){
@@ -544,6 +556,7 @@ public class Utils {
         for (Row trow : tsht){
             for(Cell tcll : trow){
                 if(tcll.getCellType() != CellType.STRING){continue;}
+
                 String clvl = tcll.getRichStringCellValue().getString();
                 String clvv = updateCell(clvl, pbks);
                 if(!clvv.equals(clvl)){
@@ -680,7 +693,9 @@ public class Utils {
         }
         return rtrn;
     }
-    public static JSONObject loadBookmarks(ISession session, IDocumentServer server, String transmittalNr, IInformationObjectLinks transmittalLinks,
+    public static JSONObject loadBookmarks(ISession session, IDocumentServer server,
+                      String transmittalNr, IInformationObjectLinks transmittalLinks,
+                      IInformationObject projectInfObj, IInformationObject contractorInfObj,
                       List<String> linkedDocIds, List<String> documentIds,
                       IProcessInstance processInstance, IDocument transmittalDoc,
                       String exportPath, ProcessHelper helper) throws Exception{
@@ -751,7 +766,9 @@ public class Utils {
             }
             rtrn.put("ApprvdFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Approved")));
             rtrn.put("ApprvdDate", rtrn.has("ApprovedDate") ? rtrn.getString("ApprovedDate") : "");
-            IDocument asgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Approved"), helper);
+            IDocument asgDoc = null;
+            asgDoc = asgDoc != null ? asgDoc : getSignatureDocument(contractorInfObj, rtrn.getString("Approved"));
+            asgDoc = asgDoc != null ? asgDoc : getSignatureDocument(projectInfObj, rtrn.getString("Approved"));
             if(asgDoc != null){
                 rtrn.put("ApprvdSignature", Utils.exportDocument(asgDoc, exportPath, rtrn.getString("Approved")));
                 rtrn.put("ApprvdSignature.RowLen", 4);
@@ -765,7 +782,9 @@ public class Utils {
             }
             rtrn.put("OrigndFullname", Utils.getWorkbasketDisplayNames(session, server, rtrn.getString("Originated")));
             rtrn.put("OrigndDate", rtrn.has("OriginatedDate") ? rtrn.getString("OriginatedDate") : "");
-            IDocument osgDoc = getSignatureDocument(rtrn.getString("ProjectNo"), rtrn.getString("Originated"), helper);
+            IDocument osgDoc = null;
+            osgDoc = osgDoc != null ? osgDoc : getSignatureDocument(contractorInfObj, rtrn.getString("Originated"));
+            osgDoc = osgDoc != null ? osgDoc : getSignatureDocument(projectInfObj, rtrn.getString("Originated"));
             if(osgDoc != null){
                 rtrn.put("OrigndSignature", Utils.exportDocument(osgDoc, exportPath, rtrn.getString("Originated")));
                 rtrn.put("OrigndSignature.RowLen", 4);
@@ -875,6 +894,7 @@ public class Utils {
         IDocumentPart partDocument = document.getPartDocument(document.getDefaultRepresentation() , 0);
         String fName = (!fileName.isEmpty() ? fileName : partDocument.getFilename());
         fName = fName.replaceAll("[\\\\/:*?\"<>|]", "_");
+
         try (InputStream inputStream = partDocument.getRawDataAsStream()) {
             IFDE fde = partDocument.getFDE();
             if (fde.getFDEType() == IFDE.FILE) {
@@ -1016,7 +1036,28 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IDocument getTemplateDocument(String prjNo, String tpltName, ProcessHelper helper)  {
+    static IDocument getTemplateDocument(IInformationObject info, String tpltName) throws Exception {
+        List<INode> nods = ((IFolder) info).getNodesByName("Templates");
+        for(INode node : nods){
+            IElements elms = node.getElements();
+
+            for(int i=0;i<elms.getCount2();i++) {
+                IElement nelement = elms.getItem2(i);
+                String edocID = nelement.getLink();
+                IInformationObject tplt = info.getSession().getDocumentServer().getInformationObjectByID(edocID, info.getSession());
+                if(tplt == null){continue;}
+
+                if(!hasDescriptor(tplt, Conf.Descriptors.TemplateName)){continue;}
+
+                String etpn = tplt.getDescriptorValue(Conf.Descriptors.TemplateName, String.class);
+                if(etpn == null || !etpn.equals(tpltName)){continue;}
+
+                return (IDocument) tplt;
+            }
+        }
+        return null;
+    }
+    static IDocument getTemplateDocument_old(String prjNo, String tpltName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")
@@ -1030,7 +1071,28 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
-    static IDocument getSignatureDocument(String prjNo, String sgnrName, ProcessHelper helper)  {
+    static IDocument getSignatureDocument(IInformationObject info, String tpltName) throws Exception {
+        List<INode> nods = ((IFolder) info).getNodesByName("Signatures");
+        for(INode node : nods){
+            IElements elms = node.getElements();
+
+            for(int i=0;i<elms.getCount2();i++) {
+                IElement nelement = elms.getItem2(i);
+                String edocID = nelement.getLink();
+                IInformationObject tplt = info.getSession().getDocumentServer().getInformationObjectByID(edocID, info.getSession());
+                if(tplt == null){continue;}
+
+                if(!hasDescriptor(tplt, Conf.Descriptors.TemplateName)){continue;}
+
+                String etpn = tplt.getDescriptorValue(Conf.Descriptors.TemplateName, String.class);
+                if(etpn == null || !etpn.equals(tpltName)){continue;}
+
+                return (IDocument) tplt;
+            }
+        }
+        return null;
+    }
+    static IDocument getSignatureDocument_old(String prjNo, String sgnrName, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
                 .append(" AND ")

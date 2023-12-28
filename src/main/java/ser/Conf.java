@@ -37,11 +37,11 @@ public class Conf {
         public static final String DocType = "ccmPrjDocDocType";
         public static final String ObjectName = "ObjectName";
         public static final String Originator = "ccmPrjDocOiginator";
-        public static final String Prefix = "ccmTrmtSenderCode";
+        public static final String Prefix = "ccmSenderCode";
         public static final String Category = "ccmPrjDocCategory";
         public static final String ParentDocNumber = "ccmPrjDocParentDoc";
         public static final String ParentDocRevision = "ccmPrjDocParentDocRevision";
-        public static final String ObjectNumberExternal = "ObjectNumberExternal";
+        public static final String TransmittalNr = "ccmPrjDocNumber";
         public static final String ClientNo = "ccmPrjDocClientPrjNumber";
         public static final String TrmtCounterPattern = "ccmTMCounterPattern";
         public static final String TrmtCounterStart = "ccmTMCounterStart";
@@ -50,12 +50,13 @@ public class Conf {
         public static final String ProjectName = "ccmPRJCard_name";
         public static final String DccList = "ccmPrjCard_DccList";
         public static final String ObjectNumber = "ObjectNumber";
-        public static final String SenderCode = "ccmTrmtSenderCode";
-        public static final String ReceiverCode = "ccmTrmtReceiverCode";
+        public static final String SenderCode = "ccmSenderCode";
+        public static final String ReceiverCode = "ccmReceiverCode";
         public static final String DocSenderCode = "ccmSenderCode";
         public static final String DocReceiverCode = "ccmReceiverCode";
         public static final String DocStatus = "ccmPrjDocStatus";
         public static final String DocOiginator = "ccmPrjDocOiginator";
+        public static final String TemplateName = "ObjectNumberExternal";
 
     }
 
@@ -69,6 +70,7 @@ public class Conf {
         public static final String PrjDocParentDoc = "CCMPRJDOCPARENTDOC";
         public static final String PrjDocParentDocRevision = "CCMPRJDOCPARENTDOCREVISION";
         public static final String ObjectType = "OBJECTTYPE";
+        public static final String ShortName = "CONTACTSHORTNAME";
 
     }
     public static class ClassIDs{
@@ -77,6 +79,7 @@ public class Conf {
         public static final String ProjectWorkspace = "32e74338-d268-484d-99b0-f90187240549";
         public static final String EngineeringProjectTransmittal = "8bf0a09b-b569-4aef-984b-78cf1644ca19";
         public static final String EngineeringCRS = "3e1fe7b3-3e86-4910-8155-c29b662e71d6";
+        public static final String InvolveParty = "fad93754-b7c2-4a12-b40e-8afae3b31e3d";
 
     }
 
@@ -85,6 +88,7 @@ public class Conf {
         public static final String EngineeringDocument= "PRJ_DOC";
         public static final String ProjectWorkspace = "PRJ_FOLDER";
         public static final String EngineeringCRS = "PRJ_CRS";
+        public static final String SupplierContact = "BPWS";
 
     }
     public static class Bookmarks{
@@ -122,7 +126,7 @@ public class Conf {
             rtrn.put("Attention", "ObjectAuthors");
             rtrn.put("CC", "CC-Receiver");
             rtrn.put("JobNo", "JobNo");
-            rtrn.put("TransmittalNo", "ObjectNumberExternal");
+            rtrn.put("TransmittalNo", "ccmPrjDocNumber");
             rtrn.put("IssueDate", "DateStart");
             rtrn.put("Discipline", "");
             rtrn.put("Summary", "ccmTrmtSummary");
@@ -136,9 +140,9 @@ public class Conf {
             rtrn.put("OriginatedDate", "ccmOriginatedDate2");
 
             rtrn.put("SenderName", "ccmTrmtSender");
-            rtrn.put("SenderCode", "ccmTrmtSenderCode");
+            rtrn.put("SenderCode", "ccmSenderCode");
             rtrn.put("ReceiverName", "ccmTrmtReceiver");
-            rtrn.put("ReceiverCode", "ccmTrmtReceiverCode");
+            rtrn.put("ReceiverCode", "ccmReceiverCode");
 
             JSONObject ebks = engDocument();
             for (String ekey : ebks.keySet()) {

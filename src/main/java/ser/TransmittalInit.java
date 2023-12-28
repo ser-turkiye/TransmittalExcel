@@ -92,7 +92,8 @@ public class TransmittalInit extends UnifiedAgent {
             }
 
 
-            processInstance = Utils.updateProcessInstance(processInstance);
+            //processInstance = Utils.updateProcessInstance(processInstance);
+            processInstance.commit();
             out.println("Tested.");
 
         } catch (Exception e) {

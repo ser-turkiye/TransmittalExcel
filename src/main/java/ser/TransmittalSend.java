@@ -6,7 +6,6 @@ import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import com.ser.blueline.lock.ILockInfo;
 import de.ser.doxis4.agentserver.UnifiedAgent;
-import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -22,6 +21,7 @@ public class TransmittalSend extends UnifiedAgent {
     IInformationObjectLinks transmittalLinks;
     IProcessInstance processInstance;
     IInformationObject projectInfObj;
+    IInformationObject contractorInfObj;
     ITask task;
     ProcessHelper helper;
     List<String> documentIds = new ArrayList<>();
@@ -69,6 +69,16 @@ public class TransmittalSend extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
+            String ivpNo = processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class);
+            if(ivpNo == null || ivpNo.isEmpty()){
+                throw new Exception("Involve Party code is empty..");
+            }
+
+            contractorInfObj = Utils.getContractorFolder(projectNo, ivpNo, helper);
+            if(contractorInfObj == null){
+                throw new Exception("Involve Party [" + projectNo + "/" + ivpNo + "].");
+            }
+
 
             transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
@@ -88,10 +98,13 @@ public class TransmittalSend extends UnifiedAgent {
 
 
             String mtpn = "TRANSMITTAL_MAIL";
-            IDocument mtpl = Utils.getTemplateDocument(projectNo, mtpn, helper);
+            IDocument mtpl = null;
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(contractorInfObj, mtpn);
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(projectInfObj, mtpn);
             if(mtpl == null){
                 throw new Exception("Template-Document [ " + mtpn + " ] not found.");
             }
+
             String tplMailPath = Utils.exportDocument(mtpl, exportPath, mtpn);
 
 
@@ -141,17 +154,22 @@ public class TransmittalSend extends UnifiedAgent {
                     processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,"50");
 
-            transmittalDoc = Utils.updateDocument(transmittalDoc);
-            processInstance = Utils.updateProcessInstance(processInstance);
+            //transmittalDoc = Utils.updateDocument(transmittalDoc);
+            //processInstance = Utils.updateProcessInstance(processInstance);
 
             String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
             sendType = (sendType == null ? "" : sendType);
 
+            transmittalDoc.commit();
 
             bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
+                    projectInfObj, contractorInfObj,
                     linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
 
             bookmarks.put("DoxisLink", "");
+
+
+
             if(sendType.contains("URL")) {
                 JSONObject mcfg = Utils.getMailConfig(session);
                 bookmarks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(transmittalDoc.getID()));
@@ -197,7 +215,9 @@ public class TransmittalSend extends UnifiedAgent {
             mail.put("BodyHTMLFile", mailHtmlPath);
             Utils.sendHTMLMail(session, mail);
 
+
             processInstance.setMainInformationObjectID(transmittalDoc.getID());
+            processInstance.commit();
             server.deleteDocument(session, tmExcelDoc);
 
             System.out.println("Finished");
