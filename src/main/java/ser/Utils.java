@@ -45,6 +45,38 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Utils {
+
+    public static boolean addToNode(IInformationObject info, String nodeName, IDocument pdoc) throws Exception {
+        IFolder fold = ((IFolder) info);
+        fold.refresh(true);
+
+        boolean rtrn = false;
+        List<INode> nods = fold.getNodesByName(nodeName);
+
+        for(INode node : nods) {
+            node.refresh(true);
+            boolean isExistElement = false;
+            IElements nelements = node.getElements();
+            for (int i = 0; i < nelements.getCount2(); i++) {
+                IElement nelement = nelements.getItem2(i);
+                String edocID = nelement.getLink();
+                String pdocID = pdoc.getID();
+                if (Objects.equals(pdocID, edocID)) {
+                    isExistElement = true;
+                    break;
+                }
+            }
+            if (isExistElement) {continue;}
+
+            if (fold.addInformationObjectToNode(pdoc.getID(), node.getID())) {
+                pdoc.commit();
+            }
+
+            rtrn = true;
+        }
+        if(rtrn){fold.commit();}
+        return rtrn;
+    }
     public static IInformationObject getContractorFolder(String prjCode, String compCode, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.InvolveParty).append("'")

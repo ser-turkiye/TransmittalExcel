@@ -144,6 +144,9 @@ public class TransmittalFromExcel extends UnifiedAgent {
             ILink lnk1 = server.createLink(session, processInstance.getID(), null, document.getID());
             lnk1.commit();
 
+            Utils.addToNode(projectInfObj, "Transmittal From Excel", document);
+
+
         } catch (Exception e) {
             //throw new RuntimeException(e);
             System.out.println("Exception       : " + e.getMessage());
