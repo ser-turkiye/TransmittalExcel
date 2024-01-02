@@ -107,8 +107,10 @@ public class TransmittalSend extends UnifiedAgent {
 
             String tplMailPath = Utils.exportDocument(mtpl, exportPath, mtpn);
 
+            String docType = processInstance.getDescriptorValue(Conf.Descriptors.DocType, String.class);
+            docType = (docType == null ? "" : docType);
 
-            documentIds = Utils.getLinkedDocIds(transmittalLinks);
+            documentIds = Utils.getLinkedDocIds(transmittalLinks, docType);
             Utils.saveDuration(processInstance);
 
             String ctpn = "TRANSMITTAL_COVER";
@@ -143,7 +145,7 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
             String pdfPath = Utils.convertExcelToPdf(coverExcelPath, exportPath + "/" + ctpn + ".pdf");
-            //Utils.removeTransmittalRepresentations(transmittalDoc, ".xlsx");
+
             Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, zipPath);
 
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocOriginator,
@@ -153,10 +155,6 @@ public class TransmittalSend extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
                     processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,"50");
-
-            //transmittalDoc = Utils.updateDocument(transmittalDoc);
-            //processInstance = Utils.updateProcessInstance(processInstance);
-
 
             transmittalDoc.commit();
 

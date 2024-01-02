@@ -94,11 +94,14 @@ public class TransmittalLoad extends UnifiedAgent {
             String tplCoverPath = Utils.exportDocument(ctpl, exportPath, ctpn);
 
             transmittalDoc = (IDocument) processInstance.getMainInformationObject();
-            if(transmittalDoc != null && !transmittalDoc.getDescriptorValue(Conf.Descriptors.Category, String.class).equals("Transmittal")){
+            if(transmittalDoc != null && !transmittalDoc.getDescriptorValue(Conf.Descriptors.Category, String.class).equals("Correspondence")){
                 transmittalDoc = null;
             }
 
-            documentIds = Utils.getLinkedDocIds(transmittalLinks);
+            String docType = processInstance.getDescriptorValue(Conf.Descriptors.DocType, String.class);
+            docType = (docType == null ? "" : docType);
+
+            documentIds = Utils.getLinkedDocIds(transmittalLinks, docType);
 
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectNo,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class));
@@ -106,6 +109,7 @@ public class TransmittalLoad extends UnifiedAgent {
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
             processInstance.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
+
 
             //processInstance = Utils.updateProcessInstance(processInstance);
             processInstance.commit();
@@ -142,7 +146,7 @@ public class TransmittalLoad extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocRevision,
                     "");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocType,
-                    "Transmittal-Outgoing");
+                    docType);
 
             String fileName = transmittalNr.replaceAll("[\\\\/:*?\"<>|]", "_") + ".pdf";
             transmittalDoc.setDescriptorValue(Conf.Descriptors.FileName,
@@ -150,7 +154,9 @@ public class TransmittalLoad extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ObjectName,
                     "Transmittal Cover Page");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.Category,
-                    "Transmittal");
+                    "Correspondence");
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.ApprCode,
+                    "N/A");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.Originator,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.Prefix, String.class));
 

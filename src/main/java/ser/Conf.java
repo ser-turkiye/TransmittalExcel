@@ -39,6 +39,7 @@ public class Conf {
         public static final String Originator = "ccmPrjDocOiginator";
         public static final String Prefix = "ccmSenderCode";
         public static final String Category = "ccmPrjDocCategory";
+        public static final String ApprCode = "ccmPrjDocApprCode";
         public static final String ParentDocNumber = "ccmPrjDocParentDoc";
         public static final String ParentDocRevision = "ccmPrjDocParentDocRevision";
         public static final String TransmittalNr = "ccmPrjDocNumber";
@@ -125,7 +126,7 @@ public class Conf {
             rtrn.put("To", "To-Receiver");
             rtrn.put("Attention", "ObjectAuthors");
             rtrn.put("CC", "CC-Receiver");
-            rtrn.put("JobNo", "JobNo");
+            //rtrn.put("JobNo", "JobNo");
             rtrn.put("TransmittalNo", "ccmPrjDocNumber");
             rtrn.put("IssueDate", "DateStart");
             rtrn.put("Discipline", "");

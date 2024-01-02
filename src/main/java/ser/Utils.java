@@ -871,7 +871,7 @@ public class Utils {
         }
         return rtrn;
     }
-    public static List<String> getLinkedDocIds(IInformationObjectLinks transmittalLinks)  {
+    public static List<String> getLinkedDocIds(IInformationObjectLinks transmittalLinks, String docType)  {
         List<String> rtrn = new ArrayList<>();
         for (ILink link : transmittalLinks.getLinks()) {
             IDocument xdoc = (IDocument) link.getTargetInformationObject();
@@ -880,7 +880,7 @@ public class Utils {
             String dtyp = xdoc.getDescriptorValue(Conf.Descriptors.DocType, String.class);
             dtyp = (dtyp == null ? "" : dtyp);
 
-            if(dtyp.equals("Transmittal-Outgoing")) {
+            if(dtyp.equals(docType)) {
                 continue;
             }
             if(rtrn.contains(xdoc.getID())) {
