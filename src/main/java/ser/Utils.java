@@ -179,9 +179,21 @@ public class Utils {
             if(wrba.get("ID") == null){continue;}
             IWorkbasket wb = bpm.getWorkbasket(wrba.getString("ID"));
             if(wb == null){continue;}
-            String mail = wb.getNotifyEMail();
-            if(mail == null){continue;}
-            rtrn.add(mail);
+
+            String mail1 = wb.getNotifyEMail();
+            if(mail1 != null && !rtrn.contains(mail1)){
+                rtrn.add(mail1);
+                continue;
+            }
+
+            IUser us = wb.getOwner();
+            if(us == null){continue;}
+
+            String mail2 = us.getEMailAddress();
+            if(mail2 != null && !rtrn.contains(mail2)){
+                rtrn.add(mail2);
+            }
+
         }
         return String.join(";", rtrn);
     }
@@ -274,7 +286,7 @@ public class Utils {
         Multipart multipart = new MimeMultipart("mixed");
 
         BodyPart htmlBodyPart = new MimeBodyPart();
-        htmlBodyPart.setContent(getHTMLFileContent(pars.getString("BodyHTMLFile")) , "text/html; charset=UTF-8"); //5
+        htmlBodyPart.setContent(getHTMLFileContent(pars.getString("BodyHTMLFile")), "text/html; charset=UTF-8"); //5
         multipart.addBodyPart(htmlBodyPart);
 
         String[] atchs = attachments.split("\\;");
@@ -302,7 +314,7 @@ public class Utils {
         return rtrn;
     }
     static String getHTMLFileContent (String path) throws Exception {
-        String rtrn = new String(Files.readAllBytes(Paths.get(path)));
+        String rtrn = new String(Files.readAllBytes(Paths.get(path)), "UTF-8");
         rtrn = rtrn.replace("\uFEFF", "");
         rtrn = rtrn.replace("ï»¿", "");
         return rtrn;

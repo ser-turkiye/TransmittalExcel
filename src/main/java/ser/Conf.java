@@ -55,7 +55,7 @@ public class Conf {
         public static final String DocSenderCode = "ccmSenderCode";
         public static final String DocReceiverCode = "ccmReceiverCode";
         public static final String DocStatus = "ccmPrjDocStatus";
-        public static final String DocOiginator = "ccmPrjDocOiginator";
+        public static final String DocOriginator = "ccmPrjDocOiginator";
         public static final String TemplateName = "ObjectNumberExternal";
 
     }

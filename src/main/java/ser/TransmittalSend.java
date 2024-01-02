@@ -146,7 +146,7 @@ public class TransmittalSend extends UnifiedAgent {
             //Utils.removeTransmittalRepresentations(transmittalDoc, ".xlsx");
             Utils.addTransmittalRepresentations(transmittalDoc, exportPath, "", pdfPath, zipPath);
 
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocOiginator,
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.DocOriginator,
                     processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocSenderCode,
                     processInstance.getDescriptorValue(Conf.Descriptors.SenderCode, String.class));
@@ -157,64 +157,69 @@ public class TransmittalSend extends UnifiedAgent {
             //transmittalDoc = Utils.updateDocument(transmittalDoc);
             //processInstance = Utils.updateProcessInstance(processInstance);
 
-            String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
-            sendType = (sendType == null ? "" : sendType);
 
             transmittalDoc.commit();
 
-            bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
-                    projectInfObj, contractorInfObj,
-                    linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
+            try {
+                String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
+                sendType = (sendType == null ? "" : sendType);
 
-            bookmarks.put("DoxisLink", "");
+                bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
+                        projectInfObj, contractorInfObj,
+                        linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
 
+                bookmarks.put("DoxisLink", "");
+                if(sendType.contains("URL")) {
+                    JSONObject mcfg = Utils.getMailConfig(session);
+                    bookmarks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(transmittalDoc.getID()));
+                }
 
+                List dstLines = Utils.excelDstTblLines(bookmarks);
+                List docLines = Utils.excelDocTblLines(bookmarks);
 
-            if(sendType.contains("URL")) {
-                JSONObject mcfg = Utils.getMailConfig(session);
-                bookmarks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(transmittalDoc.getID()));
+                String mailExcelPath = Utils.saveTransmittalExcel(tplMailPath, Conf.ExcelTransmittalSheetIndex.Mail,
+                        exportPath + "/" + mtpn + ".xlsx", bookmarks, docLines, dstLines);
+                String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, exportPath + "/" + mtpn + ".html");
+
+                JSONObject mail = new JSONObject();
+
+                List<String> stos = processInstance.getDescriptorValues("To-Receiver", String.class);
+                List<String> sc1s = processInstance.getDescriptorValues("ObjectAuthors", String.class);
+                List<String> sc2s = processInstance.getDescriptorValues("CC-Receiver", String.class);
+
+                String mtos = Utils.getWorkbasketEMails(session, server, bpm,
+                        stos == null || stos.size() == 0 ? "" : String.join(";", stos));
+                String mc1s = Utils.getWorkbasketEMails(session, server, bpm,
+                        sc1s == null || sc1s.size() == 0 ? "" : String.join(";", sc1s));
+                String mc2s = Utils.getWorkbasketEMails(session, server, bpm,
+                        sc2s == null || sc2s.size() == 0 ? "" : String.join(";", sc2s));
+
+                mail.put("To", mtos);
+                mail.put("CC", mc1s + (mc1s != "" && mc2s != "" ? ";" : "") + mc2s);
+                mail.put("Subject", "Transmittal - " + transmittalNr);
+
+                List<String> aths = new ArrayList<>();
+                if (!pdfPath.isEmpty() && sendType.contains("COVER")) {
+                    aths.add(pdfPath);
+                }
+                if (!zipPath.isEmpty() && sendType.contains("ZIP")) {
+                    aths.add(zipPath);
+                }
+
+                mail.put("AttachmentPaths", String.join(";", aths));
+                if (sendType.contains("COVER")) {
+                    mail.put("AttachmentName." + Paths.get(pdfPath).getFileName().toString(), "Cover_Preview[" + transmittalNr + "].pdf");
+                }
+                if (sendType.contains("ZIP")) {
+                    mail.put("AttachmentName." + Paths.get(zipPath).getFileName().toString(), "Eng_Documents[" + transmittalNr + "].zip");
+                }
+
+                mail.put("BodyHTMLFile", mailHtmlPath);
+                Utils.sendHTMLMail(session, mail);
             }
-
-            List dstLines = Utils.excelDstTblLines(bookmarks);
-            List docLines = Utils.excelDocTblLines(bookmarks);
-
-            String mailExcelPath = Utils.saveTransmittalExcel(tplMailPath, Conf.ExcelTransmittalSheetIndex.Mail,
-                    exportPath + "/" + mtpn + ".xlsx", bookmarks, docLines, dstLines);
-            String mailHtmlPath = Utils.convertExcelToHtml(mailExcelPath, exportPath + "/" + mtpn + ".html");
-
-            JSONObject mail = new JSONObject();
-
-            List<String> stos = processInstance.getDescriptorValues("To-Receiver", String.class);
-            List<String> sc1s = processInstance.getDescriptorValues("ObjectAuthors", String.class);
-            List<String> sc2s = processInstance.getDescriptorValues("CC-Receiver", String.class);
-
-            String mtos = Utils.getWorkbasketEMails(session, server, bpm, String.join(";", stos));
-            String mc1s = Utils.getWorkbasketEMails(session, server, bpm, String.join(";", sc1s));
-            String mc2s = Utils.getWorkbasketEMails(session, server, bpm, String.join(";", sc2s));
-
-            mail.put("To", mtos);
-            mail.put("CC", mc1s + (mc1s != "" && mc2s != "" ? ";" : "") + mc2s);
-            mail.put("Subject", "Transmittal - " + transmittalNr);
-
-            List<String> aths = new ArrayList<>();
-            if(!pdfPath.isEmpty() && sendType.contains("COVER")){
-                aths.add(pdfPath);
+            catch(Exception ex){
+                System.out.println("EXCP [Send-Mail] : " + ex.getMessage());
             }
-            if(!zipPath.isEmpty() && sendType.contains("ZIP")){
-                aths.add(zipPath);
-            }
-
-            mail.put("AttachmentPaths", String.join(";", aths));
-            if(sendType.contains("COVER")) {
-                mail.put("AttachmentName." + Paths.get(pdfPath).getFileName().toString(), "Cover_Preview[" + transmittalNr + "].pdf");
-            }
-            if(sendType.contains("ZIP")) {
-                mail.put("AttachmentName." + Paths.get(zipPath).getFileName().toString(), "Eng_Documents[" + transmittalNr + "].zip");
-            }
-
-            mail.put("BodyHTMLFile", mailHtmlPath);
-            Utils.sendHTMLMail(session, mail);
-
 
             processInstance.setMainInformationObjectID(transmittalDoc.getID());
             processInstance.commit();
