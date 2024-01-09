@@ -85,8 +85,8 @@ public class TransmittalLoad extends UnifiedAgent {
             String ctpn = "TRANSMITTAL_COVER";
 
             IDocument ctpl = null;
-            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(contractorInfObj, ctpn);
-            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(projectInfObj, ctpn);
+            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(contractorInfObj, ctpn, session, server);
+            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(projectInfObj, ctpn, session, server);
 
             if(ctpl == null){
                 throw new Exception("Template-Document [ " + ctpn + " ] not found.");

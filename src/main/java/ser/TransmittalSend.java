@@ -99,8 +99,8 @@ public class TransmittalSend extends UnifiedAgent {
 
             String mtpn = "TRANSMITTAL_MAIL";
             IDocument mtpl = null;
-            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(contractorInfObj, mtpn);
-            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(projectInfObj, mtpn);
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(contractorInfObj, mtpn, session, server);
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(projectInfObj, mtpn, session, server);
             if(mtpl == null){
                 throw new Exception("Template-Document [ " + mtpn + " ] not found.");
             }

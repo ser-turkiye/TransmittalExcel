@@ -87,7 +87,7 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , 1);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , "",1, false);
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
@@ -309,10 +309,6 @@ public class Utils {
         Transport.send(message);
 
     }
-    static String getFileContent (String path) throws Exception {
-        String rtrn = new String(Files.readAllBytes(Paths.get(path)));
-        return rtrn;
-    }
     static String getHTMLFileContent (String path) throws Exception {
         String rtrn = new String(Files.readAllBytes(Paths.get(path)), "UTF-8");
         rtrn = rtrn.replace("\uFEFF", "");
@@ -433,24 +429,6 @@ public class Utils {
     static String dateToString(Date dval) throws Exception {
         if(dval == null) return "";
         return new SimpleDateFormat("dd/MM/yyyy").format(dval);
-    }
-    static IProcessInstance updateProcessInstance(IProcessInstance prin) throws Exception {
-        String prInId = prin.getID();
-        prin.commit();
-        Thread.sleep(2000);
-        if(prInId.equals("<new>")) {
-            return prin;
-        }
-        return (IProcessInstance) prin.getSession().getDocumentServer().getInformationObjectByID(prInId, prin.getSession());
-    }
-    static IDocument updateDocument(IDocument docu) throws Exception {
-        String docuId = docu.getID();
-        docu.commit();
-        Thread.sleep(3000);
-        if(docuId.equals("<new>")) {
-            return docu;
-        }
-        return docu.getSession().getDocumentServer().getDocument4ID(docuId,  docu.getSession());
     }
     static void addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
         String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.TransmittalNr, String.class);
@@ -1062,7 +1040,7 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace} , whereClause , 1);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.ProjectWorkspace}, whereClause, "", 1, false);
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
@@ -1076,12 +1054,13 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringCRS} , whereClause , 1);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringCRS}, whereClause, "", 1, true);
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static IDocument getTemplateDocument(IInformationObject info, String tpltName) throws Exception {
+    static IDocument getTemplateDocument(IInformationObject info, String tpltName, ISession ses, IDocumentServer srv) throws Exception {
         List<INode> nods = ((IFolder) info).getNodesByName("Templates");
+        IDocument rtrn = null;
         for(INode node : nods){
             IElements elms = node.getElements();
 
@@ -1096,24 +1075,15 @@ public class Utils {
                 String etpn = tplt.getDescriptorValue(Conf.Descriptors.TemplateName, String.class);
                 if(etpn == null || !etpn.equals(tpltName)){continue;}
 
-                return (IDocument) tplt;
+                rtrn = (IDocument) tplt;
+                break;
             }
+            if(rtrn != null){break;}
         }
-        return null;
-    }
-    static IDocument getTemplateDocument_old(String prjNo, String tpltName, ProcessHelper helper)  {
-        StringBuilder builder = new StringBuilder();
-        builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjNo).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.ObjectNumberExternal).append(" = '").append(tpltName).append("'");
-        String whereClause = builder.toString();
-        System.out.println("Where Clause: " + whereClause);
-
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.Company} , whereClause , 1);
-        if(informationObjects.length < 1) {return null;}
-        return (IDocument) informationObjects[0];
+        if(srv != null && ses != null) {
+            rtrn = srv.getDocumentCurrentVersion(ses, rtrn.getID());
+        }
+        return rtrn;
     }
     static IDocument getSignatureDocument(IInformationObject info, String tpltName) throws Exception {
         List<INode> nods = ((IFolder) info).getNodesByName("Signatures");
@@ -1136,20 +1106,6 @@ public class Utils {
         }
         return null;
     }
-    static IDocument getSignatureDocument_old(String prjNo, String sgnrName, ProcessHelper helper)  {
-        StringBuilder builder = new StringBuilder();
-        builder.append("TYPE = '").append(Conf.ClassIDs.Template).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.PrjCardCode).append(" = '").append(prjNo).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.ObjectNumberExternal).append(" = '").append(sgnrName).append("'");
-        String whereClause = builder.toString();
-        System.out.println("Where Clause: " + whereClause);
-
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.Company} , whereClause , 1);
-        if(informationObjects.length < 1) {return null;}
-        return (IDocument) informationObjects[0];
-    }
     static IInformationObject[] getChildEngineeringDocuments(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
         builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
@@ -1160,7 +1116,7 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        return helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause, 0);
+        return helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause, "", 0, true);
     }
     static IDocument getEngineeringDocument(String docNo, String revNo, ProcessHelper helper)  {
         StringBuilder builder = new StringBuilder();
@@ -1172,21 +1128,7 @@ public class Utils {
         String whereClause = builder.toString();
         System.out.println("Where Clause: " + whereClause);
 
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause , 1);
-        if(informationObjects.length < 1) {return null;}
-        return (IDocument) informationObjects[0];
-    }
-    static IDocument getTransmittalOutgoingDocument(String docNo, ProcessHelper helper)  {
-        StringBuilder builder = new StringBuilder();
-        builder.append("TYPE = '").append(Conf.ClassIDs.EngineeringDocument).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.PrjDocNumber).append(" = '").append(docNo).append("'")
-                .append(" AND ")
-                .append(Conf.DescriptorLiterals.PrjDocDocType).append(" = '").append("Transmittal-Outgoing").append("'");
-        String whereClause = builder.toString();
-        System.out.println("Where Clause: " + whereClause);
-
-        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringDocument} , whereClause , 1);
+        IInformationObject[] informationObjects = helper.createQuery(new String[]{Conf.Databases.EngineeringDocument}, whereClause, "", 1, true);
         if(informationObjects.length < 1) {return null;}
         return (IDocument) informationObjects[0];
     }
