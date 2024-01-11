@@ -5,6 +5,8 @@ import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,9 +16,7 @@ import static java.lang.System.out;
 
 
 public class TransmittalInit extends UnifiedAgent {
-    ISession session;
-    IDocumentServer server;
-    IBpmService bpm;
+    Logger log = LogManager.getLogger();
     IProcessInstance processInstance;
     IInformationObject projectInfObj;
     IInformationObjectLinks transmittalLinks;
@@ -34,17 +34,17 @@ public class TransmittalInit extends UnifiedAgent {
             return resultRestart("Restarting Agent");
         }
 
-        session = getSes();
-        bpm = getBpm();
-        server = session.getDocumentServer();
+        Utils.session = getSes();
+        Utils.bpm = getBpm();
+        Utils.server = Utils.session.getDocumentServer();
+        Utils.loadDirectory(Conf.Paths.MainPath);
+        
         task = getEventTask();
 
         try {
 
-            helper = new ProcessHelper(session);
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
-
-            XTRObjects.setSession(session);
+            helper = new ProcessHelper(Utils.session);
+            XTRObjects.setSession(Utils.session);
 
             processInstance = task.getProcessInstance();
             projectNo = (processInstance != null ? Utils.projectNr((IInformationObject) processInstance) : "");
@@ -56,7 +56,7 @@ public class TransmittalInit extends UnifiedAgent {
             if(projectInfObj == null){
                 throw new Exception("Project not found [" + projectNo + "].");
             }
-            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            transmittalNr = Utils.getTransmittalNr(projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");
             }
@@ -94,17 +94,17 @@ public class TransmittalInit extends UnifiedAgent {
 
             //processInstance = Utils.updateProcessInstance(processInstance);
             processInstance.commit();
-            out.println("Tested.");
+            log.info("Tested.");
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            out.println("Exception       : " + e.getMessage());
-            out.println("    Class       : " + e.getClass());
-            out.println("    Stack-Trace : " + e.getStackTrace() );
+            log.error("Exception       : " + e.getMessage());
+            log.error("    Class       : " + e.getClass());
+            log.error("    Stack-Trace : " + e.getStackTrace() );
             return resultError("Exception : " + e.getMessage());
         }
 
-        out.println("Finished");
+        log.info("Finished");
         return resultSuccess("Ended successfully");
     }
 }

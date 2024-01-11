@@ -1,10 +1,11 @@
 package ser;
 
 import com.ser.blueline.*;
-import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.*;
@@ -12,10 +13,7 @@ import java.util.*;
 
 
 public class TransmittalLoad extends UnifiedAgent {
-
-    ISession session;
-    IDocumentServer server;
-    IBpmService bpm;
+    Logger log = LogManager.getLogger();
     IInformationObjectLinks transmittalLinks;
     IProcessInstance processInstance;
     IInformationObject projectInfObj;
@@ -38,20 +36,20 @@ public class TransmittalLoad extends UnifiedAgent {
             return resultRestart("Restarting Agent");
         }
 
-        session = getSes();
-        bpm = getBpm();
-        server = session.getDocumentServer();
+        Utils.session = getSes();
+        Utils.bpm = getBpm();
+        Utils.server = Utils.session.getDocumentServer();
+        Utils.loadDirectory(Conf.Paths.MainPath);
+
         task = getEventTask();
 
         try {
 
-            helper = new ProcessHelper(session);
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
-
-            XTRObjects.setSession(session);
+            helper = new ProcessHelper(Utils.session);
+            XTRObjects.setSession(Utils.session);
 
             String uniqueId = UUID.randomUUID().toString();
-            String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Transmittal[" + uniqueId + "]";
+            String exportPath = Conf.Paths.MainPath + "/Transmittal[" + uniqueId + "]";
             (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
@@ -74,7 +72,7 @@ public class TransmittalLoad extends UnifiedAgent {
                 throw new Exception("Involve Party [" + projectNo + "/" + ivpNo + "].");
             }
 
-            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            transmittalNr = Utils.getTransmittalNr(projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");
             }
@@ -85,8 +83,8 @@ public class TransmittalLoad extends UnifiedAgent {
             String ctpn = "TRANSMITTAL_COVER";
 
             IDocument ctpl = null;
-            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(contractorInfObj, ctpn, session, server);
-            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(projectInfObj, ctpn, session, server);
+            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(contractorInfObj, ctpn);
+            ctpl = ctpl != null ? ctpl : Utils.getTemplateDocument(projectInfObj, ctpn);
 
             if(ctpl == null){
                 throw new Exception("Template-Document [ " + ctpn + " ] not found.");
@@ -116,12 +114,12 @@ public class TransmittalLoad extends UnifiedAgent {
 
             boolean isTDocLinked = (transmittalDoc == null ? false : true);
             if(transmittalDoc == null) {
-                transmittalDoc = Utils.createTransmittalDocument(session, server, projectInfObj);
+                transmittalDoc = Utils.createTransmittalDocument(projectInfObj);
             }
 
-            bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
+            bookmarks = Utils.loadBookmarks(transmittalNr, transmittalLinks,
                     projectInfObj, contractorInfObj,
-                    linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
+                    linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath);
 
             transmittalDoc.setDescriptorValue(Conf.Descriptors.TransmittalNr,
                     transmittalNr);
@@ -178,7 +176,7 @@ public class TransmittalLoad extends UnifiedAgent {
             transmittalDoc.commit();
 
 
-            ILink[] tlnks = server.getReferencedRelationships(session, transmittalDoc, true);
+            ILink[] tlnks = Utils.server.getReferencedRelationships(Utils.session, transmittalDoc, true);
             JSONObject tlnkds = new JSONObject();
             for (ILink tlnk : tlnks) {
                 IInformationObject ttgt = tlnk.getTargetInformationObject();
@@ -189,7 +187,7 @@ public class TransmittalLoad extends UnifiedAgent {
                     tlnkds.remove(lnkd);
                     continue;
                 }
-                ILink lnk1 = server.createLink(session, transmittalDoc.getID(), null, lnkd);
+                ILink lnk1 = Utils.server.createLink(Utils.session, transmittalDoc.getID(), null, lnkd);
                 lnk1.commit();
             }
 
@@ -201,11 +199,9 @@ public class TransmittalLoad extends UnifiedAgent {
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            System.out.println("Exception       : " + e.getMessage());
-            System.out.println("    Class       : " + e.getClass());
-            System.out.println("    Stack-Trace : " + e.getStackTrace() );
-            System.out.println("    Cause is : " + e.getCause() );
-
+            log.error("Exception       : " + e.getMessage());
+            log.error("    Class       : " + e.getClass());
+            log.error("    Stack-Trace : " + e.getStackTrace() );
             return resultError("Exception : " + e.getMessage());
         }
 

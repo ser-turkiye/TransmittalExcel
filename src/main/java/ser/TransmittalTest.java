@@ -7,17 +7,10 @@ import com.ser.blueline.ISession;
 import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
-import com.spire.pdf.conversion.compression.ImageCompressionOptions;
-import com.spire.xls.ImageFormatType;
 import com.spire.xls.Workbook;
 import com.spire.xls.Worksheet;
-import com.spire.xls.core.spreadsheet.HTMLOptions;
 import de.ser.doxis4.agentserver.UnifiedAgent;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.util.IOUtils;
-import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 
@@ -27,12 +20,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.out;
 
@@ -57,12 +46,12 @@ public class TransmittalTest extends UnifiedAgent {
         try {
 
             helper = new ProcessHelper(getSes());
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
+            (new File(Conf.Paths.MainPath)).mkdirs();
 
             XTRObjects.setSession(session);
 
             String uniqueId = UUID.randomUUID().toString();
-            String excelPath = FileEvents.fileExport(document, Conf.ExcelTransmittalPaths.MainPath, uniqueId);
+            String excelPath = FileEvents.fileExport(document, Conf.Paths.MainPath, uniqueId);
 
             FileInputStream fist = new FileInputStream(excelPath);
             XSSFWorkbook fwrb = new XSSFWorkbook(fist);

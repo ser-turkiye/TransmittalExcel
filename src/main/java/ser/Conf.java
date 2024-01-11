@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Conf {
 
-    public static class ExcelTransmittalPaths {
+    public static class Paths {
         public static final String MainPath = "C:/tmp2/bulk/transmittal";
     }
     public static class ExcelTransmittalSheetIndex {

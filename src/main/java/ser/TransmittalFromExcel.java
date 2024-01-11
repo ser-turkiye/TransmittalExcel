@@ -3,6 +3,8 @@ package ser;
 import com.ser.blueline.*;
 import com.ser.blueline.bpm.IProcessInstance;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 
@@ -12,9 +14,7 @@ import java.util.UUID;
 
 
 public class TransmittalFromExcel extends UnifiedAgent {
-
-    ISession session;
-    IDocumentServer server;
+    Logger log = LogManager.getLogger();
     ProcessHelper helper;
     IInformationObject projectInfObj;
     IProcessInstance processInstance;
@@ -25,19 +25,21 @@ public class TransmittalFromExcel extends UnifiedAgent {
         if (getEventDocument() == null)
             return resultError("Null Document object");
 
-        session = getSes();
-        server = session.getDocumentServer();
+
+        Utils.session = getSes();
+        Utils.bpm = getBpm();
+        Utils.server = Utils.session.getDocumentServer();
+        Utils.loadDirectory(Conf.Paths.MainPath);
+        
         IDocument document = getEventDocument();
 
         try {
 
             helper = new ProcessHelper(getSes());
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
-
-            XTRObjects.setSession(session);
+            XTRObjects.setSession(Utils.session);
 
             String uniqueId = UUID.randomUUID().toString();
-            String excelPath = FileEvents.fileExport(document, Conf.ExcelTransmittalPaths.MainPath, uniqueId);
+            String excelPath = FileEvents.fileExport(document, Conf.Paths.MainPath, uniqueId);
 
             FileInputStream fist = new FileInputStream(excelPath);
             XSSFWorkbook fwrb = new XSSFWorkbook(fist);
@@ -101,7 +103,7 @@ public class TransmittalFromExcel extends UnifiedAgent {
             processInstance.setDescriptorValue(Conf.Descriptors.ProjectName,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectName, String.class));
 
-            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            transmittalNr = Utils.getTransmittalNr(projectInfObj, processInstance);
 
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");
@@ -110,11 +112,11 @@ public class TransmittalFromExcel extends UnifiedAgent {
             processInstance.setDescriptorValue(Conf.Descriptors.DccList,
                     projectInfObj.getDescriptorValue(Conf.Descriptors.DccList, String.class));
             processInstance.setDescriptorValue("To-Receiver",
-                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("To-Receiver", String.class)));
+                    Utils.getWorkbasketDisplayNames(processInstance.getDescriptorValue("To-Receiver", String.class)));
             processInstance.setDescriptorValue("ObjectAuthors",
-                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("ObjectAuthors", String.class)));
+                    Utils.getWorkbasketDisplayNames(processInstance.getDescriptorValue("ObjectAuthors", String.class)));
             processInstance.setDescriptorValue("CC-Receiver",
-                    Utils.getWorkbasketDisplayNames(session, server, processInstance.getDescriptorValue("CC-Receiver", String.class)));
+                    Utils.getWorkbasketDisplayNames(processInstance.getDescriptorValue("CC-Receiver", String.class)));
 
 
             document.setDescriptorValue("ccmPrjDocNumber", transmittalNr + "/Import-Excel");
@@ -141,7 +143,7 @@ public class TransmittalFromExcel extends UnifiedAgent {
             //processInstance = Utils.updateProcessInstance(processInstance);
 
             processInstance.commit();
-            ILink lnk1 = server.createLink(session, processInstance.getID(), null, document.getID());
+            ILink lnk1 = Utils.server.createLink(Utils.session, processInstance.getID(), null, document.getID());
             lnk1.commit();
 
             Utils.addToNode(projectInfObj, "Transmittal From Excel", document);
@@ -149,13 +151,13 @@ public class TransmittalFromExcel extends UnifiedAgent {
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            System.out.println("Exception       : " + e.getMessage());
-            System.out.println("    Class       : " + e.getClass());
-            System.out.println("    Stack-Trace : " + e.getStackTrace() );
+            log.error("Exception       : " + e.getMessage());
+            log.error("    Class       : " + e.getClass());
+            log.error("    Stack-Trace : " + e.getStackTrace() );
             return resultError("Exception : " + e.getMessage());
         }
 
-        System.out.println("Finished");
+        log.info("Finished");
 
         return resultSuccess("Ended successfully");
     }

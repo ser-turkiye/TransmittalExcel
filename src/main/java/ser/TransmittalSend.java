@@ -1,23 +1,20 @@
 package ser;
 
 import com.ser.blueline.*;
-import com.ser.blueline.bpm.IBpmService;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
 import com.ser.blueline.lock.ILockInfo;
 import de.ser.doxis4.agentserver.UnifiedAgent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.*;
 
 
 public class TransmittalSend extends UnifiedAgent {
-
-    ISession session;
-    IDocumentServer server;
-    IBpmService bpm;
+    Logger log = LogManager.getLogger();
     IInformationObjectLinks transmittalLinks;
     IProcessInstance processInstance;
     IInformationObject projectInfObj;
@@ -40,24 +37,25 @@ public class TransmittalSend extends UnifiedAgent {
             return resultRestart("Restarting Agent - Task.ProcessInstance");
         }
 
-        session = getSes();
-        bpm = getBpm();
-        server = session.getDocumentServer();
+        Utils.session = getSes();
+        Utils.bpm = getBpm();
+        Utils.server = Utils.session.getDocumentServer();
+        Utils.loadDirectory(Conf.Paths.MainPath);
+
         task = getEventTask();
 
         try {
-            JSONObject scfg = Utils.getSystemConfig(session);
+
+            helper = new ProcessHelper(Utils.session);
+            XTRObjects.setSession(Utils.session);
+            
+            JSONObject scfg = Utils.getSystemConfig();
             if(scfg.has("LICS.SPIRE_XLS")){
                 com.spire.license.LicenseProvider.setLicenseKey(scfg.getString("LICS.SPIRE_XLS"));
             }
 
-            helper = new ProcessHelper(session);
-            (new File(Conf.ExcelTransmittalPaths.MainPath)).mkdirs();
-
-            XTRObjects.setSession(session);
-
             String uniqueId = UUID.randomUUID().toString();
-            String exportPath = Conf.ExcelTransmittalPaths.MainPath + "/Transmittal[" + uniqueId + "]";
+            String exportPath = Conf.Paths.MainPath + "/Transmittal[" + uniqueId + "]";
             (new File(exportPath)).mkdirs();
 
             processInstance = task.getProcessInstance();
@@ -80,7 +78,7 @@ public class TransmittalSend extends UnifiedAgent {
             }
 
 
-            transmittalNr = Utils.getTransmittalNr(session, projectInfObj, processInstance);
+            transmittalNr = Utils.getTransmittalNr(projectInfObj, processInstance);
             if(transmittalNr.isEmpty()){
                 throw new Exception("Transmittal number not found.");
             }
@@ -99,8 +97,8 @@ public class TransmittalSend extends UnifiedAgent {
 
             String mtpn = "TRANSMITTAL_MAIL";
             IDocument mtpl = null;
-            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(contractorInfObj, mtpn, session, server);
-            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(projectInfObj, mtpn, session, server);
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(contractorInfObj, mtpn);
+            mtpl = mtpl != null ? mtpl : Utils.getTemplateDocument(projectInfObj, mtpn);
             if(mtpl == null){
                 throw new Exception("Template-Document [ " + mtpn + " ] not found.");
             }
@@ -127,8 +125,8 @@ public class TransmittalSend extends UnifiedAgent {
                 throw new Exception("Transmittal-Cover Excel not found.");
             }
 
-            transmittalDoc = Utils.createTransmittalDocument(session, server, null);
-            transmittalDoc = server.copyDocument2(session, tmExcelDoc, transmittalDoc, CopyScope.COPY_DESCRIPTORS);
+            transmittalDoc = Utils.createTransmittalDocument(null);
+            transmittalDoc = Utils.server.copyDocument2(Utils.session, tmExcelDoc, transmittalDoc, CopyScope.COPY_DESCRIPTORS);
 
             String zipPath = "";
             if(zipPath.isEmpty()) {
@@ -162,13 +160,13 @@ public class TransmittalSend extends UnifiedAgent {
                 String sendType = processInstance.getDescriptorValue(Conf.Descriptors.TrmtSendType, String.class);
                 sendType = (sendType == null ? "" : sendType);
 
-                bookmarks = Utils.loadBookmarks(session, server, transmittalNr, transmittalLinks,
+                bookmarks = Utils.loadBookmarks(transmittalNr, transmittalLinks,
                         projectInfObj, contractorInfObj,
-                        linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath, helper);
+                        linkedDocIds, documentIds, processInstance, transmittalDoc, exportPath);
 
                 bookmarks.put("DoxisLink", "");
                 if(sendType.contains("URL")) {
-                    JSONObject mcfg = Utils.getMailConfig(session);
+                    JSONObject mcfg = Utils.getMailConfig();
                     bookmarks.put("DoxisLink", mcfg.getString("webBase") + helper.getDocumentURL(transmittalDoc.getID()));
                 }
 
@@ -185,11 +183,11 @@ public class TransmittalSend extends UnifiedAgent {
                 List<String> sc1s = processInstance.getDescriptorValues("ObjectAuthors", String.class);
                 List<String> sc2s = processInstance.getDescriptorValues("CC-Receiver", String.class);
 
-                String mtos = Utils.getWorkbasketEMails(session, server, bpm,
+                String mtos = Utils.getWorkbasketEMails(
                         stos == null || stos.size() == 0 ? "" : String.join(";", stos));
-                String mc1s = Utils.getWorkbasketEMails(session, server, bpm,
+                String mc1s = Utils.getWorkbasketEMails(
                         sc1s == null || sc1s.size() == 0 ? "" : String.join(";", sc1s));
-                String mc2s = Utils.getWorkbasketEMails(session, server, bpm,
+                String mc2s = Utils.getWorkbasketEMails(
                         sc2s == null || sc2s.size() == 0 ? "" : String.join(";", sc2s));
 
                 mail.put("To", mtos);
@@ -206,32 +204,30 @@ public class TransmittalSend extends UnifiedAgent {
 
                 mail.put("AttachmentPaths", String.join(";", aths));
                 if (sendType.contains("COVER")) {
-                    mail.put("AttachmentName." + Paths.get(pdfPath).getFileName().toString(), "Cover_Preview[" + transmittalNr + "].pdf");
+                    mail.put("AttachmentName." + java.nio.file.Paths.get(pdfPath).getFileName().toString(), "Cover_Preview[" + transmittalNr + "].pdf");
                 }
                 if (sendType.contains("ZIP")) {
-                    mail.put("AttachmentName." + Paths.get(zipPath).getFileName().toString(), "Eng_Documents[" + transmittalNr + "].zip");
+                    mail.put("AttachmentName." + java.nio.file.Paths.get(zipPath).getFileName().toString(), "Eng_Documents[" + transmittalNr + "].zip");
                 }
 
                 mail.put("BodyHTMLFile", mailHtmlPath);
-                Utils.sendHTMLMail(session, mail);
+                Utils.sendHTMLMail(mail);
             }
             catch(Exception ex){
-                System.out.println("EXCP [Send-Mail] : " + ex.getMessage());
+                log.error("EXCP [Send-Mail] : " + ex.getMessage());
             }
 
             processInstance.setMainInformationObjectID(transmittalDoc.getID());
             processInstance.commit();
-            server.deleteDocument(session, tmExcelDoc);
+            Utils.server.deleteDocument(Utils.session, tmExcelDoc);
 
-            System.out.println("Finished");
+            log.info("Finished");
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
-            System.out.println("Exception       : " + e.getMessage());
-            System.out.println("    Class       : " + e.getClass());
-            System.out.println("    Stack-Trace : " + e.getStackTrace() );
-            System.out.println("    Cause is : " + e.getCause() );
-
+            log.error("Exception       : " + e.getMessage());
+            log.error("    Class       : " + e.getClass());
+            log.error("    Stack-Trace : " + e.getStackTrace() );
             return resultError("Exception : " + e.getMessage());
         }
 
