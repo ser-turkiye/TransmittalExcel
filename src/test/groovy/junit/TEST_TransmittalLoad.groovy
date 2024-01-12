@@ -22,7 +22,7 @@ class TEST_TransmittalLoad {
     void testForAgentResult() {
         def agent = new TransmittalLoad();
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM2428438103-3b29-48bb-ba1e-01745d9202b5182023-12-28T06:58:30.480Z010"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST03BPM24f1f40b89-44c3-435f-968f-8e269818354c182024-01-12T07:35:11.907Z012"
 
         def result = (AgentExecutionResult) agent.execute(binding.variables)
         assert result.resultCode == 0

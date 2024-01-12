@@ -56,30 +56,26 @@ public class Utils {
     public static boolean hasDescriptor(IInformationObject object, String descName){
         IDescriptor[] descs = session.getDocumentServer().getDescriptorByName(descName, session);
         List<String> checkList = new ArrayList<>();
-        for(IDescriptor ddsc : descs){
-            checkList.add(ddsc.getId());
-        }
+        for(IDescriptor ddsc : descs){checkList.add(ddsc.getId());}
 
         String[] descIds = new String[0];
         if(object instanceof IFolder){
             String classID = object.getClassID();
             IArchiveFolderClass folderClass = session.getDocumentServer().getArchiveFolderClass(classID , session);
             descIds = folderClass.getAssignedDescriptorIDs();
-        }else if(object instanceof IDocument){
+        } else if(object instanceof IDocument){
             IArchiveClass documentClass = ((IDocument) object).getArchiveClass();
             descIds = documentClass.getAssignedDescriptorIDs();
-        }else if(object instanceof ITask){
+        } else if(object instanceof ITask){
             IProcessType processType = ((ITask) object).getProcessType();
             descIds = processType.getAssignedDescriptorIDs();
-        }else if(object instanceof IProcessInstance){
+        } else if(object instanceof IProcessInstance){
             IProcessType processType = ((IProcessInstance) object).getProcessType();
             descIds = processType.getAssignedDescriptorIDs();
         }
 
         List<String> descList = Arrays.asList(descIds);
-        for(String dId : descList){
-            if(checkList.contains(dId)){return true;}
-        }
+        for(String dId : descList){if(checkList.contains(dId)){return true;}}
         return false;
     }
     public static boolean addToNode(IInformationObject info, String nodeName, IDocument pdoc) throws Exception {
@@ -127,7 +123,7 @@ public class Utils {
         if(informationObjects.length < 1) {return null;}
         return informationObjects[0];
     }
-    static String getTransmittalNr(IInformationObject projectInfObj, IProcessInstance processInstance) throws Exception {
+    public static String getTransmittalNr(IInformationObject projectInfObj, IProcessInstance processInstance) throws Exception {
         String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.TransmittalNr, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
         if(rtrn.isEmpty()) {
@@ -185,7 +181,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static String projectNr(IInformationObject projectInfObj) throws Exception {
+    public static String projectNr(IInformationObject projectInfObj) throws Exception {
         String rtrn = "";
         if(Utils.hasDescriptor(projectInfObj, Conf.Descriptors.ProjectNo)){
             rtrn = projectInfObj.getDescriptorValue(Conf.Descriptors.ProjectNo, String.class);
@@ -193,7 +189,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static List<JSONObject> getWorkbaskets(String users) throws Exception {
+    public static List<JSONObject> getWorkbaskets(String users) throws Exception {
         List<JSONObject> rtrn = new ArrayList<>();
 
         IStringMatrix mtrx = server.getStringMatrixByID("Workbaskets", session);
@@ -208,7 +204,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static String getWorkbasketEMails(String users) throws Exception {
+    public static String getWorkbasketEMails(String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -233,7 +229,7 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static String getWorkbasketDisplayNames(String users) throws Exception {
+    public static String getWorkbasketDisplayNames(String users) throws Exception {
         List<JSONObject> wrbs = getWorkbaskets(users);
         List<String> rtrn = new ArrayList<>();
         for (JSONObject wrba : wrbs) {
@@ -242,7 +238,7 @@ public class Utils {
         }
         return String.join(";", rtrn);
     }
-    static void sendHTMLMail(JSONObject pars) throws Exception {
+    public static void sendHTMLMail(JSONObject pars) throws Exception {
         JSONObject mcfg = Utils.getMailConfig();
 
         String host = mcfg.getString("host");
@@ -345,16 +341,16 @@ public class Utils {
         Transport.send(message);
 
     }
-    static String getHTMLFileContent (String path) throws Exception {
+    public static String getHTMLFileContent (String path) throws Exception {
         String rtrn = new String(Files.readAllBytes(Paths.get(path)), "UTF-8");
         rtrn = rtrn.replace("\uFEFF", "");
         rtrn = rtrn.replace("ï»¿", "");
         return rtrn;
     }
-    static JSONObject getSystemConfig() throws Exception {
+    public static JSONObject getSystemConfig() throws Exception {
         return getSystemConfig(null);
     }
-    static JSONObject getSystemConfig(IStringMatrix mtrx) throws Exception {
+    public static JSONObject getSystemConfig(IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = server.getStringMatrix("CCM_SYSTEM_CONFIG", session);
         }
@@ -372,10 +368,10 @@ public class Utils {
         }
         return rtrn;
     }
-    static JSONObject getMailConfig() throws Exception {
+    public static JSONObject getMailConfig() throws Exception {
         return getMailConfig(null);
     }
-    static JSONObject getMailConfig(IStringMatrix mtrx) throws Exception {
+    public static JSONObject getMailConfig(IStringMatrix mtrx) throws Exception {
         if(mtrx == null) {
             mtrx = server.getStringMatrix("CCM_MAIL_CONFIG", session);
         }
@@ -388,7 +384,7 @@ public class Utils {
         }
         return rtrn;
     }
-    static JSONObject getWorkbasket( String userID, IStringMatrix mtrx) throws Exception {
+    public static JSONObject getWorkbasket( String userID, IStringMatrix mtrx) throws Exception {
         if(mtrx == null){
             mtrx = server.getStringMatrixByID("Workbaskets", session);
         }
@@ -411,7 +407,7 @@ public class Utils {
         }
         return null;
     }
-    static IDocument createTransmittalDocument(IInformationObject infObj)  {
+    public static IDocument createTransmittalDocument(IInformationObject infObj)  {
 
         IArchiveClass ac = server.getArchiveClass(Conf.ClassIDs.EngineeringDocument, session);
         IDatabase db = session.getDatabase(ac.getDefaultDatabaseID());
@@ -423,10 +419,10 @@ public class Utils {
         }
         return rtrn;
     }
-    static void copyFile(String spth, String tpth) throws Exception {
+    public static void copyFile(String spth, String tpth) throws Exception {
         FileUtils.copyFile(new File(spth), new File(tpth));
     }
-    static void saveDuration(IProcessInstance processInstance) throws Exception {
+    public static void saveDuration(IProcessInstance processInstance) throws Exception {
 
         Collection<ITask> tsks = processInstance.findTasks();
 
@@ -462,11 +458,11 @@ public class Utils {
 
 
     }
-    static String dateToString(Date dval) throws Exception {
+    public static String dateToString(Date dval) throws Exception {
         if(dval == null) return "";
         return new SimpleDateFormat("dd/MM/yyyy").format(dval);
     }
-    static void addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
+    public static void addTransmittalRepresentations(IDocument tdoc, String mainPath, String xlsxPath, String pdfPath, String zipPath) throws Exception {
         String tmnr = tdoc.getDescriptorValue(Conf.Descriptors.TransmittalNr, String.class);
 
         String _pdfPath = "";
@@ -1115,7 +1111,7 @@ public class Utils {
             }
             if(rtrn != null){break;}
         }
-        if(server != null && session != null) {
+        if(rtrn != null && server != null && session != null) {
             rtrn = server.getDocumentCurrentVersion(session, rtrn.getID());
         }
         return rtrn;
