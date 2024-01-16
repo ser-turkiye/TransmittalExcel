@@ -36,7 +36,7 @@ public class Conf {
         public static final String DocRevision = "ccmPrjDocRevision";
         public static final String DocType = "ccmPrjDocDocType";
         public static final String ObjectName = "ObjectName";
-        public static final String Originator = "ccmPrjDocOiginator";
+        public static final String Originator = "ccmPrjDocOriginator";
         public static final String Prefix = "ccmSenderCode";
         public static final String Category = "ccmPrjDocCategory";
         public static final String ApprCode = "ccmPrjDocApprCode";

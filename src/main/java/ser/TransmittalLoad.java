@@ -155,8 +155,6 @@ public class TransmittalLoad extends UnifiedAgent {
                     "Correspondence");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.ApprCode,
                     "N/A");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.Originator,
-                    projectInfObj.getDescriptorValue(Conf.Descriptors.Prefix, String.class));
 
             //transmittalDoc = Utils.updateDocument(transmittalDoc);
             //transmittalDoc.commit();
