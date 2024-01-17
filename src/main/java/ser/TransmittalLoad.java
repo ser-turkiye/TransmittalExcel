@@ -153,8 +153,6 @@ public class TransmittalLoad extends UnifiedAgent {
                     "Transmittal Cover Page");
             transmittalDoc.setDescriptorValue(Conf.Descriptors.Category,
                     "Correspondence");
-            transmittalDoc.setDescriptorValue(Conf.Descriptors.ApprCode,
-                    "N/A");
 
             //transmittalDoc = Utils.updateDocument(transmittalDoc);
             //transmittalDoc.commit();

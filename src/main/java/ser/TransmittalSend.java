@@ -153,6 +153,7 @@ public class TransmittalSend extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
                     processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,"50");
+            transmittalDoc.setDescriptorValue(Conf.Descriptors.ApprCode, "N/A");
 
             transmittalDoc.commit();
 
