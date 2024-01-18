@@ -137,7 +137,7 @@ public class TransmittalLoad extends UnifiedAgent {
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocReceiverCode,
                     processInstance.getDescriptorValue(Conf.Descriptors.ReceiverCode, String.class));
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocStatus,
-                    "50");
+                    "40");
 
             transmittalDoc.setDescriptorValue(Conf.Descriptors.DocNumber,
                     transmittalNr);
